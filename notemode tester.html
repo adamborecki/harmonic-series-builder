@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>notemode tester</title>
+        <style>
+            body {
+                background:#000;
+            }
+            .grid_controller{
+                border:1px;
+                padding:3px;
+                min-width:100px;
+                min-height:100px;
+            }
+            .grid_controller :nth-child(1000){
+                background:white;
+            }
+            .grid_controller :nth-child(7n){
+                background:blue;
+            }
+            .pad{
+                width:40px;
+                height:40px;
+                float:left;
+                background:#484848;
+                margin:2px
+            }
+            .new_row {
+                clear:both;
+            }
+        </style>
+    </head>
+    <body>
+
+        <button onclick="window.location=document.location;">refresh</button><br />
+
+<div class="grid_controller">
+<script>
+function pad_id_from_row_col(row,col){
+    return "pad"+row+"-"+col;
+}
+
+var total_rows = 8;
+var total_cols = 8;
+
+for(var row = total_rows;row >= 1;row--){
+    for(var col = 1;col <= total_cols;col++){
+        document.write("<div class='pad' id='"+pad_id_from_row_col(row,col)+"'></div>");
+    }
+    document.write("<div class='new_row'></div>");
+}
+
+
+
+</script>
+</div>
+    </body>
+</html>
