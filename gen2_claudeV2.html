@@ -8,9 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* ═══════════════════════════════════════════════
-   THEME & RESET
-   ═══════════════════════════════════════════════ */
 :root {
   --bg:#0e1019; --bg2:#161a28; --bg3:#1e2336; --bdr:#2a304e;
   --tx:#dde0ec; --tx2:#8890a8; --tx3:#555a72;
@@ -67,8 +64,8 @@ a{color:var(--ac)}
 
 /* ═══════ Notation Panel ═══════ */
 #notation-wrap{background:#fff;border-radius:var(--r);margin:8px 0;
-  overflow:hidden;position:relative;min-height:200px}
-#notation{width:100%;min-height:200px}
+  overflow:hidden;position:relative;min-height:220px}
+#notation{width:100%;min-height:220px}
 
 /* ═══════ Controls ═══════ */
 .ctrls{display:flex;gap:6px;flex-wrap:wrap;padding:4px 0}
@@ -175,7 +172,6 @@ details.adv .row{padding:2px 0;font-family:var(--m)}
   padding:16px;margin:8px 0;text-align:center;font-size:.88rem;line-height:1.6}
 .finish h2{color:var(--ok);font-size:1.1rem;margin-bottom:6px}
 
-/* ═══════ Responsive ═══════ */
 @media(max-width:480px){
   body{padding:8px 8px 30px}
   .btn{padding:9px 12px;font-size:.76rem}
@@ -188,13 +184,13 @@ details.adv .row{padding:2px 0;font-family:var(--m)}
 </head>
 <body>
 
-<!-- ═══════ Audio Overlay ═══════ -->
+<!-- Audio Overlay -->
 <div id="overlay">
   <button id="startBtn">🎵 Tap to Enable Audio</button>
   <p>Required for sound playback</p>
 </div>
 
-<!-- ═══════ Help Modal ═══════ -->
+<!-- Help Modal -->
 <div class="modal-bg" id="helpModal">
   <div class="modal">
     <button class="close" id="helpClose">&times;</button>
@@ -216,17 +212,17 @@ details.adv .row{padding:2px 0;font-family:var(--m)}
   </div>
 </div>
 
-<!-- ═══════ Header ═══════ -->
+<!-- Header -->
 <div class="hdr">
   <h1>Harmonic Series Builder</h1>
   <div class="hdr-btns">
     <button class="pill" id="btnMode">Practice</button>
-    <button class="pill" id="btnRem">Reminders: ON</button>
+    <button class="pill on" id="btnRem">Reminders: ON</button>
     <button class="pill" id="btnHelp">Help</button>
   </div>
 </div>
 
-<!-- ═══════ Practice Bar (hidden by default) ═══════ -->
+<!-- Practice Bar -->
 <div class="prac-bar" id="pracBar" style="display:none">
   <select id="fsel"></select>
   <button class="btn" id="btnRand">🎲 Random</button>
@@ -234,26 +230,26 @@ details.adv .row{padding:2px 0;font-family:var(--m)}
   <span class="streak" id="streak"></span>
 </div>
 
-<!-- ═══════ Progress ═══════ -->
+<!-- Progress -->
 <div class="prog" id="prog"></div>
 
-<!-- ═══════ Task Box ═══════ -->
+<!-- Task Box -->
 <div class="task" id="taskBox"></div>
 
-<!-- ═══════ Notation ═══════ -->
+<!-- Notation -->
 <div id="notation-wrap"><div id="notation"></div></div>
 
-<!-- ═══════ Feedback ═══════ -->
+<!-- Feedback -->
 <div class="fb" id="fb"></div>
 
-<!-- ═══════ Controls ═══════ -->
+<!-- Note Move Controls -->
 <div class="ctrls" id="ctrls">
   <button class="btn" id="btnUp">⬆️ Move Note Up</button>
   <button class="btn" id="btnDn">⬇️ Move Note Down</button>
   <button class="btn confirm" id="btnOk">✓ Confirm</button>
 </div>
 
-<!-- ═══════ Accidental Bar ═══════ -->
+<!-- Accidental Bar -->
 <div class="acc-bar" id="accBar" style="display:none">
   <button class="acc-btn" data-a="bb">𝄫</button>
   <button class="acc-btn" data-a="b">♭</button>
@@ -263,7 +259,7 @@ details.adv .row{padding:2px 0;font-family:var(--m)}
   <button class="btn confirm" id="btnAccOk">✓ Confirm</button>
 </div>
 
-<!-- ═══════ Half-step Panel ═══════ -->
+<!-- Half-step Panel -->
 <div class="hs-panel" id="hsPanel">
   <div class="hs-info" id="hsInfo">Count half steps from the starting key:</div>
   <div class="hs-count" id="hsCount">0</div>
@@ -275,410 +271,275 @@ details.adv .row{padding:2px 0;font-family:var(--m)}
   <div class="cheat" id="hsCheat">P5=7 · P4=5 · M3=4 · m3=3 · M2=2</div>
 </div>
 
-<!-- ═══════ Keyboard ═══════ -->
+<!-- Keyboard -->
 <div id="kb-wrap"><div id="kb"></div></div>
 
-<!-- ═══════ Audio Buttons ═══════ -->
+<!-- Audio Buttons -->
 <div class="audio-bar">
   <button class="btn" id="btnPlayF">🔊 Play Fundamental</button>
   <button class="btn" id="btnPlayS">🎶 Play Series</button>
 </div>
 
-<!-- ═══════ Completed Partials ═══════ -->
+<!-- Completed Partials -->
 <div class="done-list" id="doneList"></div>
 
-<!-- ═══════ Advanced Panel ═══════ -->
+<!-- Advanced Panel -->
 <details class="adv" id="advPanel" style="display:none">
   <summary>Advanced (ratios &amp; cents)</summary>
   <div id="advContent"></div>
 </details>
 
-<!-- ═══════ Finish Message ═══════ -->
+<!-- Finish Message -->
 <div class="finish" id="finishBox" style="display:none"></div>
 
-<!-- ═══════ SCRIPTS (loaded before closing body) ═══════ -->
-<script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.6/build/cjs/vexflow.js"></script>
+<!--
+  VexFlow 3.0.9 — creates window.Vex global reliably in <script> tags.
+  VexFlow 4.x CJS build does NOT create browser globals (uses module.exports).
+-->
+<script src="https://cdn.jsdelivr.net/npm/vexflow@3.0.9/releases/vexflow-min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════
-   HARMONIC SERIES BUILDER — Main Application
-   All variables use `var` to avoid TDZ / hoisting issues.
+   HARMONIC SERIES BUILDER
+   Uses VexFlow 3.0.9 (Vex.Flow.*) + Tone.js 14
+   All vars use `var` to avoid TDZ / hoisting crashes.
    ═══════════════════════════════════════════════════════════ */
 
-/* ─── Resolve VexFlow global immediately ──────────────────── */
-var VF = (function(){
-  /* VexFlow 4.x CJS bundle can expose different globals */
-  if(typeof Vex !== 'undefined' && Vex.Flow) return Vex.Flow;
-  if(typeof Vex !== 'undefined' && Vex.Renderer) return Vex;
-  if(typeof VexFlow !== 'undefined' && VexFlow.Renderer) return VexFlow;
-  if(typeof VexFlow !== 'undefined' && VexFlow.Flow) return VexFlow.Flow;
-  if(typeof vexflow !== 'undefined' && vexflow.Renderer) return vexflow;
-  if(typeof vexflow !== 'undefined' && vexflow.Flow) return vexflow.Flow;
-  /* Last resort: check window properties */
-  var w = window;
-  if(w.Vex && w.Vex.Flow) return w.Vex.Flow;
-  if(w.VexFlow) return w.VexFlow;
-  return null;
-})();
+/* ─── Resolve VexFlow ─────────────────────────────────────── */
+var VF = null;
+if(typeof Vex !== 'undefined' && Vex.Flow && Vex.Flow.Renderer){
+  VF = Vex.Flow;
+  console.log('VexFlow 3 loaded OK');
+} else {
+  console.error('VexFlow not found. window.Vex =', typeof Vex);
+}
 
 /* ─── Globals ─────────────────────────────────────────────── */
-var synth = null;       // Tone.js synth (set after user gesture)
-var keys = [];          // Keyboard key elements [{el, midi, black}]
-var AOK = { 'bb': true, 'b': true, '': true, '#': true, '##': true };
-
+var synth = null;
+var kbKeys = [];  // [{el, midi, black}]
+var AOK = { 'bb':true, 'b':true, '':true, '#':true, '##':true };
 var LETTERS = ['C','D','E','F','G','A','B'];
-var SEMI = [0, 2, 4, 5, 7, 9, 11]; // semitones for C D E F G A B
-
-/* Tutorial order: partials 1,2,3,4,5,6,8,7 */
-var TORDER = [1,2,3,4,5,6,8,7];
-
-/* State */
+var SEMI = [0,2,4,5,7,9,11];
+var TORDER = [1,2,3,4,5,6,8,7]; // tutorial partial order
 var G = {
-  mode: 'tutorial',
-  rem: true,
-  fund: null,       // {l, o, a, m}
-  ix: 0,            // index in TORDER
-  ph: 'n',          // 'n' = note phase, 'a' = accidental phase
-  pos: {l:'B', o:3},
-  acc: '',
-  hc: 0,
-  hsStart: 0,
-  hsDir: 1,
-  dn: [],           // completed [{p, l, o, a, m, hz}]
-  fin: false,
-  streak: 0,
-  tgt: null
+  mode:'tutorial', rem:true,
+  fund:null, ix:0, ph:'n',
+  pos:{l:'B',o:3}, acc:'',
+  hc:0, hsStart:0, hsDir:1,
+  dn:[], fin:false, streak:0, tgt:null
 };
 
-/* ─── DOM helpers ─────────────────────────────────────────── */
+/* ─── DOM helper ──────────────────────────────────────────── */
 function $(id){ return document.getElementById(id); }
 
-/* ─── MIDI / Freq helpers ─────────────────────────────────── */
-function toMidi(letter, acc, oct){
-  var li = LETTERS.indexOf(letter);
-  if(li < 0) return 60;
-  var m = (oct + 1) * 12 + SEMI[li];
-  if(acc === 'b') m -= 1;
-  else if(acc === 'bb') m -= 2;
-  else if(acc === '#') m += 1;
-  else if(acc === '##') m += 2;
+/* ─── MIDI / Freq ─────────────────────────────────────────── */
+function toMidi(l,a,o){
+  var i=LETTERS.indexOf(l); if(i<0) return 60;
+  var m=(o+1)*12+SEMI[i];
+  if(a==='b') m--; else if(a==='bb') m-=2;
+  else if(a==='#') m++; else if(a==='##') m+=2;
   return m;
 }
-
-function midiToFreq(m){ return 440 * Math.pow(2, (m - 69) / 12); }
-function freqToMidi(f){ return 69 + 12 * Math.log2(f / 440); }
+function m2f(m){ return 440*Math.pow(2,(m-69)/12); }
+function f2m(f){ return 69+12*Math.log2(f/440); }
 
 /* ─── Display helpers ─────────────────────────────────────── */
-function accDisp(a){
-  if(a === 'bb') return '𝄫';
-  if(a === 'b') return '♭';
-  if(a === '#') return '♯';
-  if(a === '##') return '𝄪';
-  return '';
+function accD(a){
+  if(a==='bb') return '𝄫'; if(a==='b') return '♭';
+  if(a==='#') return '♯'; if(a==='##') return '𝄪'; return '';
 }
-function noteDisp(l, o, a){ return l + accDisp(a) + o; }
-
-function accToVex(a){
-  if(a === 'bb' || a === 'b' || a === '#' || a === '##') return a;
-  return null;
+function noteD(l,o,a){ return l+accD(a)+o; }
+function ord(n){
+  var s=['th','st','nd','rd'],v=n%100;
+  return n+(s[(v-20)%10]||s[v]||s[0]);
 }
-
-function ordinal(n){
-  var s = ['th','st','nd','rd'];
-  var v = n % 100;
-  return n + (s[(v-20)%10] || s[v] || s[0]);
-}
-
-function letterUp(l, steps){
-  var i = LETTERS.indexOf(l);
-  return LETTERS[((i + steps) % 7 + 7) % 7];
+function letterUp(l,steps){
+  var i=LETTERS.indexOf(l);
+  return LETTERS[((i+steps)%7+7)%7];
 }
 
 /* ─── Calculate target for a partial ──────────────────────── */
 function calcTarget(pNum){
-  var fundFreq = midiToFreq(G.fund.m);
-  var tgtFreq = fundFreq * pNum;
-  var tgtMidi = Math.round(freqToMidi(tgtFreq));
-  var justFreq = tgtFreq;
-  var etFreq = midiToFreq(tgtMidi);
-  var centsOff = Math.round(1200 * Math.log2(justFreq / etFreq));
+  var ff=m2f(G.fund.m), tf=ff*pNum;
+  var tm=Math.round(f2m(tf));
+  var etf=m2f(tm);
+  var cOff=Math.round(1200*Math.log2(tf/etf));
 
-  /* For the fundamental */
-  if(pNum === 1){
-    return {
-      p:1, l:G.fund.l, o:G.fund.o, a:G.fund.a, m:G.fund.m,
-      hz:tgtFreq, cents:centsOff, from:null,
-      generic:0, genericNum:1, halfSteps:0,
-      intervalName:'Unison',
-      desc:'Place the fundamental: ' + noteDisp(G.fund.l, G.fund.o, G.fund.a)
-    };
-  }
+  if(pNum===1) return {
+    p:1, l:G.fund.l, o:G.fund.o, a:G.fund.a, m:G.fund.m,
+    hz:tf, cents:cOff, from:null,
+    generic:0, genericNum:1, halfSteps:0,
+    intervalName:'Unison',
+    desc:'Place the fundamental: '+noteD(G.fund.l,G.fund.o,G.fund.a)
+  };
 
-  /* Helper: find completed partial */
   function findDone(pn){
-    for(var i=0; i<G.dn.length; i++) if(G.dn[i].p === pn) return G.dn[i];
+    for(var i=0;i<G.dn.length;i++) if(G.dn[i].p===pn) return G.dn[i];
     return null;
   }
-
-  var fromP, genSteps, halfSteps, iName, desc;
-
+  var fromP,gs,hs,iN,desc;
   switch(pNum){
-    case 2:
-      fromP = findDone(1) || {l:G.fund.l, o:G.fund.o, a:G.fund.a, m:G.fund.m, p:1};
-      genSteps = 7; halfSteps = 12;
-      iName = 'P8 (Octave)';
-      desc = 'Octave above the 1st partial (fundamental)';
-      break;
-    case 3:
-      fromP = findDone(2);
-      genSteps = 4; halfSteps = 7;
-      iName = 'P5';
-      desc = 'Perfect 5th above the 2nd partial';
-      break;
-    case 4:
-      fromP = findDone(2);
-      genSteps = 7; halfSteps = 12;
-      iName = 'P8 (Octave)';
-      desc = 'Octave above the 2nd partial (two octaves above fundamental)';
-      break;
-    case 5:
-      fromP = findDone(4);
-      genSteps = 2; halfSteps = 4;
-      iName = 'M3';
-      desc = 'Major 3rd above the 4th partial';
-      break;
-    case 6:
-      fromP = findDone(5);
-      genSteps = 2; halfSteps = 3;
-      iName = 'm3';
-      desc = 'Minor 3rd above the 5th partial';
-      break;
-    case 8:
-      fromP = findDone(4);
-      genSteps = 7; halfSteps = 12;
-      iName = 'P8 (Octave)';
-      desc = 'Octave above the 4th partial (three octaves above fundamental)';
-      break;
-    case 7:
-      fromP = findDone(6);
-      genSteps = 2; halfSteps = 3;
-      iName = 'm3';
-      desc = 'Minor 3rd above the 6th partial';
-      break;
-    default:
-      fromP = findDone(1) || {l:G.fund.l, o:G.fund.o, a:G.fund.a, m:G.fund.m, p:1};
-      genSteps = 0; halfSteps = 0; iName = ''; desc = '';
+    case 2: fromP=findDone(1)||G.fund; gs=7; hs=12;
+      iN='P8 (Octave)'; desc='Octave above the 1st partial (fundamental)'; break;
+    case 3: fromP=findDone(2); gs=4; hs=7;
+      iN='P5'; desc='Perfect 5th above the 2nd partial'; break;
+    case 4: fromP=findDone(2); gs=7; hs=12;
+      iN='P8 (Octave)'; desc='Octave above the 2nd partial (two octaves above fundamental)'; break;
+    case 5: fromP=findDone(4); gs=2; hs=4;
+      iN='M3'; desc='Major 3rd above the 4th partial'; break;
+    case 6: fromP=findDone(5); gs=2; hs=3;
+      iN='m3'; desc='Minor 3rd above the 5th partial'; break;
+    case 8: fromP=findDone(4); gs=7; hs=12;
+      iN='P8 (Octave)'; desc='Octave above the 4th partial (three octaves above fundamental)'; break;
+    case 7: fromP=findDone(6); gs=2; hs=3;
+      iN='m3'; desc='Minor 3rd above the 6th partial'; break;
+    default: fromP=G.fund; gs=0; hs=0; iN=''; desc='';
   }
+  if(!fromP) fromP={l:G.fund.l,o:G.fund.o,a:G.fund.a||'',m:G.fund.m,p:1};
 
-  if(!fromP) fromP = {l:G.fund.l, o:G.fund.o, a:G.fund.a, m:G.fund.m, p:1};
-
-  /* Target letter from generic interval */
-  var tgtLetter;
-  if(genSteps === 7) tgtLetter = fromP.l; // octave = same letter
-  else tgtLetter = letterUp(fromP.l, genSteps);
-
-  /* Find best octave for this letter near tgtMidi */
-  var bestOct = 0, bestDist = 999;
-  for(var oc = 0; oc <= 8; oc++){
-    var testM = toMidi(tgtLetter, '', oc);
-    var d = Math.abs(testM - tgtMidi);
-    if(d < bestDist){ bestDist = d; bestOct = oc; }
+  var tL = (gs===7) ? fromP.l : letterUp(fromP.l, gs);
+  var bestO=0, bestD=999;
+  for(var oc=0;oc<=8;oc++){
+    var d=Math.abs(toMidi(tL,'',oc)-tm);
+    if(d<bestD){bestD=d; bestO=oc;}
   }
+  var base=toMidi(tL,'',bestO), diff=tm-base, tA='';
+  if(diff===-2) tA='bb'; else if(diff===-1) tA='b';
+  else if(diff===1) tA='#'; else if(diff===2) tA='##';
 
-  /* Required accidental */
-  var baseMidi = toMidi(tgtLetter, '', bestOct);
-  var diff = tgtMidi - baseMidi;
-  var tgtAcc = '';
-  if(diff === -2) tgtAcc = 'bb';
-  else if(diff === -1) tgtAcc = 'b';
-  else if(diff === 0) tgtAcc = '';
-  else if(diff === 1) tgtAcc = '#';
-  else if(diff === 2) tgtAcc = '##';
-
-  var genericNum = (genSteps === 7) ? 8 : genSteps + 1;
-
+  var gNum=(gs===7)?8:gs+1;
   return {
-    p:pNum, l:tgtLetter, o:bestOct, a:tgtAcc, m:tgtMidi,
-    hz:tgtFreq, cents:centsOff,
+    p:pNum, l:tL, o:bestO, a:tA, m:tm, hz:tf, cents:cOff,
     from:{p:fromP.p, l:fromP.l, o:fromP.o, a:fromP.a||'', m:fromP.m},
-    generic:genSteps, genericNum:genericNum,
-    halfSteps:halfSteps, intervalName:iName, desc:desc
+    generic:gs, genericNum:gNum, halfSteps:hs, intervalName:iN, desc:desc
   };
 }
 
 /* ─── Audio ───────────────────────────────────────────────── */
 function startAudio(){
-  if(typeof Tone === 'undefined'){
-    alert('Tone.js failed to load. Audio will not work.');
-    document.getElementById('overlay').classList.add('off');
-    boot();
-    return;
+  if(typeof Tone==='undefined'){
+    alert('Tone.js failed to load.');
+    $('overlay').classList.add('off');
+    boot(); return;
   }
   Tone.start().then(function(){
-    synth = new Tone.Synth({
-      oscillator: { type: 'sine' },
-      envelope: { attack: 0.015, decay: 0.1, sustain: 0.5, release: 0.25 }
+    synth=new Tone.Synth({
+      oscillator:{type:'sine'},
+      envelope:{attack:0.015,decay:0.1,sustain:0.5,release:0.25}
     }).toDestination();
-    document.getElementById('overlay').classList.add('off');
+    $('overlay').classList.add('off');
     boot();
-  }).catch(function(e){
-    console.error('Tone start error:', e);
-    document.getElementById('overlay').classList.add('off');
+  }).catch(function(){
+    $('overlay').classList.add('off');
     boot();
   });
 }
 
-function playNote(freq, dur){
+function playNote(freq,dur){
   if(!synth) return;
-  try { synth.triggerAttackRelease(freq, dur || 0.5); } catch(e){}
+  try{synth.triggerAttackRelease(freq,dur||0.5);}catch(e){}
 }
-
-function playFund(){
-  if(G.fund) playNote(midiToFreq(G.fund.m), 0.8);
-}
-
+function playFund(){ if(G.fund) playNote(m2f(G.fund.m),0.8); }
 function playSeries(){
-  if(!G.fund || G.dn.length === 0) return;
-  var sorted = G.dn.slice().sort(function(a,b){ return a.p - b.p; });
-  sorted.forEach(function(d, i){
-    setTimeout(function(){ playNote(d.hz, 0.4); }, i * 420);
-  });
+  if(!G.fund||G.dn.length===0) return;
+  var s=G.dn.slice().sort(function(a,b){return a.p-b.p;});
+  for(var i=0;i<s.length;i++){
+    (function(idx){ setTimeout(function(){ playNote(s[idx].hz,0.4); }, idx*420); })(i);
+  }
 }
 
 /* ─── Keyboard ────────────────────────────────────────────── */
 function buildKB(){
-  var kb = $('kb');
-  kb.innerHTML = '';
-  keys = [];
-
-  var whiteX = 0;
-  var blackAfter = [1,1,0,1,1,1,0]; // after C,D,_,F,G,A,_
-
-  for(var oct = 1; oct <= 6; oct++){
-    for(var ni = 0; ni < 7; ni++){
-      var m = toMidi(LETTERS[ni], '', oct);
-
-      /* White key */
-      var wk = document.createElement('div');
-      wk.className = 'wk';
-      wk.setAttribute('data-midi', m);
-      wk.style.position = 'relative';
-
-      if(LETTERS[ni] === 'C'){
-        var lbl = document.createElement('span');
-        lbl.className = 'klbl';
-        lbl.textContent = 'C' + oct;
-        wk.appendChild(lbl);
+  var kb=$('kb'); kb.innerHTML=''; kbKeys=[];
+  var wx=0, blk=[1,1,0,1,1,1,0]; // black key after C,D,_,F,G,A,_
+  for(var oct=1;oct<=6;oct++){
+    for(var ni=0;ni<7;ni++){
+      var m=toMidi(LETTERS[ni],'',oct);
+      var wk=document.createElement('div');
+      wk.className='wk'; wk.setAttribute('data-midi',m);
+      if(LETTERS[ni]==='C'){
+        var lb=document.createElement('span');
+        lb.className='klbl'; lb.textContent='C'+oct;
+        wk.appendChild(lb);
       }
-
-      (function(mid){
-        wk.addEventListener('click', function(){ playNote(midiToFreq(mid), 0.3); });
-      })(m);
-
+      (function(mid){wk.addEventListener('click',function(){playNote(m2f(mid),0.3);});})(m);
       kb.appendChild(wk);
-      keys.push({ el: wk, midi: m, black: false });
+      kbKeys.push({el:wk,midi:m,black:false});
 
-      /* Black key? */
-      if(blackAfter[ni]){
-        var bm = m + 1;
-        var bk = document.createElement('div');
-        bk.className = 'bk';
-        bk.setAttribute('data-midi', bm);
-        bk.style.left = (whiteX + 32 - 11) + 'px';
-
-        (function(mid){
-          bk.addEventListener('click', function(){ playNote(midiToFreq(mid), 0.3); });
-        })(bm);
-
+      if(blk[ni]){
+        var bm=m+1, bk=document.createElement('div');
+        bk.className='bk'; bk.setAttribute('data-midi',bm);
+        bk.style.left=(wx+32-11)+'px';
+        (function(mid){bk.addEventListener('click',function(){playNote(m2f(mid),0.3);});})(bm);
         kb.appendChild(bk);
-        keys.push({ el: bk, midi: bm, black: true });
+        kbKeys.push({el:bk,midi:bm,black:true});
       }
-
-      whiteX += 32;
+      wx+=32;
     }
   }
 }
 
-function hlKey(targetMidi){
-  for(var i = 0; i < keys.length; i++){
-    keys[i].el.classList.remove('hl');
-    if(parseInt(keys[i].el.getAttribute('data-midi')) === targetMidi){
-      keys[i].el.classList.add('hl');
-    }
+function hlKey(tm){
+  for(var i=0;i<kbKeys.length;i++){
+    var k=kbKeys[i], km=parseInt(k.el.getAttribute('data-midi'));
+    k.el.classList.toggle('hl', km===tm);
   }
-  /* Auto-scroll */
-  var wrap = $('kb-wrap');
-  for(var j = 0; j < keys.length; j++){
-    if(parseInt(keys[j].el.getAttribute('data-midi')) === targetMidi && !keys[j].black){
-      var kl = keys[j].el.offsetLeft;
-      var ww = wrap.clientWidth;
-      wrap.scrollTo({ left: kl - ww/2 + 16, behavior: 'smooth' });
+  /* Auto-scroll to highlighted white key */
+  var wrap=$('kb-wrap');
+  for(var j=0;j<kbKeys.length;j++){
+    if(parseInt(kbKeys[j].el.getAttribute('data-midi'))===tm && !kbKeys[j].black){
+      wrap.scrollTo({left:kbKeys[j].el.offsetLeft-wrap.clientWidth/2+16,behavior:'smooth'});
       break;
     }
   }
 }
 
 function clearKB(){
-  for(var i = 0; i < keys.length; i++){
-    keys[i].el.classList.remove('hl','start','step');
-    var badge = keys[i].el.querySelector('.kbadge');
-    if(badge) badge.remove();
+  for(var i=0;i<kbKeys.length;i++){
+    kbKeys[i].el.classList.remove('hl','start','step');
+    var b=kbKeys[i].el.querySelector('.kbadge');
+    if(b) b.remove();
   }
 }
 
 /* ─── Half-step tool ──────────────────────────────────────── */
-function midiNoteName(m){
-  var oct = Math.floor(m / 12) - 1;
-  var pc = m % 12;
-  var names = ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
-  return names[pc] + oct;
+function midiName(m){
+  var oct=Math.floor(m/12)-1, pc=m%12;
+  return ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'][pc]+oct;
 }
 
-function hsOpen(startMidi, targetHalf, dir){
-  clearKB();
-  G.hc = 0;
-  G.hsStart = startMidi;
-  G.hsDir = dir || 1;
+function hsOpen(startM,half,dir){
+  clearKB(); G.hc=0; G.hsStart=startM; G.hsDir=dir||1;
   $('hsPanel').classList.add('open');
-  $('hsCount').textContent = '0';
-  $('hsPrev').style.display = (dir === -1 || (G.tgt && G.tgt.p === 7)) ? '' : 'none';
-  $('hsCheat').style.display = G.rem ? '' : 'none';
-  $('hsInfo').textContent = 'Count half steps from ' + midiNoteName(startMidi) +
-    (dir === -1 ? ' (counting LEFT):' : ':');
-
-  for(var i = 0; i < keys.length; i++){
-    if(parseInt(keys[i].el.getAttribute('data-midi')) === startMidi){
-      keys[i].el.classList.add('start');
-    }
+  $('hsCount').textContent='0';
+  $('hsPrev').style.display=(dir===-1||(G.tgt&&G.tgt.p===7))?'':'none';
+  $('hsCheat').style.display=G.rem?'':'none';
+  $('hsInfo').textContent='Count half steps from '+midiName(startM)+
+    (dir===-1?' (counting LEFT):':':');
+  for(var i=0;i<kbKeys.length;i++){
+    if(parseInt(kbKeys[i].el.getAttribute('data-midi'))===startM)
+      kbKeys[i].el.classList.add('start');
   }
 }
 
 function hsStep(dir){
-  G.hc += dir;
-  if(G.hc < 0) G.hc = 0;
-  $('hsCount').textContent = G.hc;
-
+  G.hc+=dir; if(G.hc<0) G.hc=0;
+  $('hsCount').textContent=G.hc;
   clearKB();
-  var startM = G.hsStart;
-  for(var i = 0; i < keys.length; i++){
-    if(parseInt(keys[i].el.getAttribute('data-midi')) === startM){
-      keys[i].el.classList.add('start');
-    }
+  var sm=G.hsStart;
+  for(var i=0;i<kbKeys.length;i++){
+    if(parseInt(kbKeys[i].el.getAttribute('data-midi'))===sm)
+      kbKeys[i].el.classList.add('start');
   }
-
-  for(var s = 1; s <= G.hc; s++){
-    var stepM = startM + s * G.hsDir;
-    for(var j = 0; j < keys.length; j++){
-      if(parseInt(keys[j].el.getAttribute('data-midi')) === stepM){
-        keys[j].el.classList.add('step');
-        if(G.rem){
-          var existing = keys[j].el.querySelector('.kbadge');
-          if(!existing){
-            var badge = document.createElement('span');
-            badge.className = 'kbadge';
-            badge.textContent = s;
-            keys[j].el.appendChild(badge);
-          }
+  for(var s=1;s<=G.hc;s++){
+    var stepM=sm+s*G.hsDir;
+    for(var j=0;j<kbKeys.length;j++){
+      if(parseInt(kbKeys[j].el.getAttribute('data-midi'))===stepM){
+        kbKeys[j].el.classList.add('step');
+        if(G.rem && !kbKeys[j].el.querySelector('.kbadge')){
+          var badge=document.createElement('span');
+          badge.className='kbadge'; badge.textContent=s;
+          kbKeys[j].el.appendChild(badge);
         }
       }
     }
@@ -686,542 +547,417 @@ function hsStep(dir){
 }
 
 function hsClose(){
-  $('hsPanel').classList.remove('open');
-  clearKB();
-  if(G.ph === 'a' && !G.fin){
-    hlKey(toMidi(G.pos.l, G.acc, G.pos.o));
-  }
+  $('hsPanel').classList.remove('open'); clearKB();
+  if(G.ph==='a'&&!G.fin) hlKey(toMidi(G.pos.l,G.acc,G.pos.o));
 }
 
-/* ─── VexFlow Rendering ───────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════
+   VEXFLOW 3 RENDERING
+   VexFlow 3 API: Vex.Flow.Renderer, StaveNote uses
+   addAccidental(index, accidental) not addModifier.
+   ═══════════════════════════════════════════════════════════ */
 function renderStaff(){
-  var container = $('notation');
-  container.innerHTML = '';
-  if(!VF){ container.innerHTML = '<p style="color:red;padding:12px">VexFlow not loaded.</p>'; return; }
+  var el=$('notation'); el.innerHTML='';
+  if(!VF){ el.innerHTML='<p style="color:red;padding:12px">VexFlow not loaded.</p>'; return; }
 
-  var w = Math.min(container.parentElement.clientWidth || 500, 600);
-  var h = 280;
+  var w=Math.min((el.parentElement.clientWidth||500),600);
+  var h=280;
 
   try {
-    var renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
-    renderer.resize(w, h);
-    var ctx = renderer.getContext();
+    var renderer=new VF.Renderer(el, VF.Renderer.Backends.SVG);
+    renderer.resize(w,h);
+    var ctx=renderer.getContext();
+    var sw=w-50;
 
-    var staveW = w - 40;
-
-    var treble = new VF.Stave(20, 10, staveW);
+    /* Draw grand staff */
+    var treble=new VF.Stave(25,10,sw);
     treble.addClef('treble').setContext(ctx).draw();
-
-    var bass = new VF.Stave(20, 130, staveW);
+    var bass=new VF.Stave(25,130,sw);
     bass.addClef('bass').setContext(ctx).draw();
 
     /* Brace */
     try {
-      var brace = new VF.StaveConnector(treble, bass);
+      var brace=new VF.StaveConnector(treble,bass);
       brace.setType(VF.StaveConnector.type.BRACE);
       brace.setContext(ctx).draw();
-    } catch(be){}
+    } catch(e){}
 
-    /* Collect all notes to display */
-    var allNotes = [];
-
-    /* Completed partials */
-    for(var di = 0; di < G.dn.length; di++){
-      var d = G.dn[di];
-      allNotes.push({ l:d.l, o:d.o, a:d.a||'', done:true, p:d.p, bonus:false });
+    /* Gather notes */
+    var notes=[];
+    for(var di=0;di<G.dn.length;di++){
+      var d=G.dn[di];
+      notes.push({l:d.l,o:d.o,a:d.a||'',done:true,p:d.p,bonus:false});
     }
-
-    /* Current note */
     if(!G.fin && G.tgt){
-      var curAcc = (G.ph === 'a') ? G.acc : '';
-      allNotes.push({ l:G.pos.l, o:G.pos.o, a:curAcc, done:false, p:G.tgt.p, bonus:false });
+      notes.push({l:G.pos.l,o:G.pos.o,a:(G.ph==='a')?G.acc:'',done:false,p:G.tgt.p,bonus:false});
     }
-
-    /* Bonus partials 9-16 */
     if(G.fin){
-      for(var bp = 9; bp <= 16; bp++){
-        var bf = midiToFreq(G.fund.m) * bp;
-        var bm = Math.round(freqToMidi(bf));
-        var bInfo = midiToNoteInfo(bm);
-        allNotes.push({ l:bInfo.l, o:bInfo.o, a:bInfo.a, done:true, p:bp, bonus:true });
+      for(var bp=9;bp<=16;bp++){
+        var bm=Math.round(f2m(m2f(G.fund.m)*bp));
+        var bi=midiNoteInfo(bm);
+        notes.push({l:bi.l,o:bi.o,a:bi.a,done:true,p:bp,bonus:true});
       }
     }
+    notes.sort(function(a,b){return a.p-b.p;});
 
-    allNotes.sort(function(a,b){ return a.p - b.p; });
+    /* Draw each note individually */
+    for(var ni=0;ni<notes.length;ni++){
+      var n=notes[ni];
+      var m=toMidi(n.l,n.a,n.o);
+      var clef=(m>=60)?'treble':'bass';
+      var inOver=(m>=55&&m<=65);
+      var dur=n.done?'w':'q';
+      var vk=n.l.toLowerCase()+'/'+n.o;
+      var stave=(clef==='treble')?treble:bass;
 
-    /* Render each note individually into appropriate stave */
-    for(var ni = 0; ni < allNotes.length; ni++){
-      var n = allNotes[ni];
-      var m = toMidi(n.l, n.a, n.o);
-      var clef = (m >= 60) ? 'treble' : 'bass';
-      var inOverlap = (m >= 55 && m <= 65);
-      var dur = n.done ? 'w' : 'q';
-      var vexKey = n.l.toLowerCase() + '/' + n.o;
-      var stave = (clef === 'treble') ? treble : bass;
+      drawOneNote(vk,dur,clef,n.a,stave,ctx,sw,n.bonus,n.done);
 
-      try {
-        var sn = new VF.StaveNote({ keys:[vexKey], duration:dur, clef:clef });
-        if(n.a && accToVex(n.a) && AOK[n.a]){
-          sn.addModifier(new VF.Accidental(accToVex(n.a)));
-        }
-        if(n.bonus) sn.setStyle({ fillStyle:'#999', strokeStyle:'#999' });
-        else if(!n.done) sn.setStyle({ fillStyle:'#5e9cff', strokeStyle:'#5e9cff' });
-
-        drawSingleNote(sn, stave, ctx, staveW);
-
-        /* Ghost note for overlap region */
-        if(inOverlap && n.done && !n.bonus){
-          var gClef = (clef === 'treble') ? 'bass' : 'treble';
-          var gStave = (gClef === 'treble') ? treble : bass;
-          try {
-            var gn = new VF.StaveNote({ keys:[vexKey], duration:dur, clef:gClef });
-            if(n.a && accToVex(n.a) && AOK[n.a]){
-              gn.addModifier(new VF.Accidental(accToVex(n.a)));
-            }
-            gn.setStyle({ fillStyle:'#aaa', strokeStyle:'#aaa' });
-            drawSingleNote(gn, gStave, ctx, staveW);
-          } catch(ge){}
-        }
-      } catch(ne){ console.warn('Note render error:', ne); }
+      /* Ghost note for overlap region */
+      if(inOver && n.done && !n.bonus){
+        var gc=(clef==='treble')?'bass':'treble';
+        var gs=(gc==='treble')?treble:bass;
+        drawOneNote(vk,dur,gc,n.a,gs,ctx,sw,false,true,true);
+      }
     }
   } catch(e){
-    console.error('Render error:', e);
-    container.innerHTML = '<p style="color:red;padding:10px">Notation render error. Reload page.</p>';
+    console.error('Render error:',e);
+    el.innerHTML='<p style="color:red;padding:10px">Notation error: '+e.message+'</p>';
   }
 }
 
-function drawSingleNote(note, stave, ctx, staveW){
+/* Draw a single VexFlow note on a stave */
+function drawOneNote(vexKey,dur,clef,acc,stave,ctx,sw,isBonus,isDone,isGhost){
   try {
-    var numBeats = (note.getDuration() === 'w') ? 4 : 1;
-    var v = new VF.Voice({ num_beats:numBeats, beat_value:4 }).setStrict(false);
-    v.addTickable(note);
-    new VF.Formatter().joinVoices([v]).format([v], staveW - 60);
-    v.draw(ctx, stave);
+    var sn=new VF.StaveNote({keys:[vexKey],duration:dur,clef:clef});
+    if(acc && AOK[acc]){
+      sn.addAccidental(0, new VF.Accidental(acc));
+    }
+    /* Styling */
+    var fill='#000', stroke='#000';
+    if(isGhost){ fill='#aaa'; stroke='#aaa'; }
+    else if(isBonus){ fill='#999'; stroke='#999'; }
+    else if(!isDone){ fill='#5e9cff'; stroke='#5e9cff'; }
+    sn.setStyle({fillStyle:fill, strokeStyle:stroke});
+
+    var beats=(dur==='w')?4:1;
+    var voice=new VF.Voice({num_beats:beats, beat_value:4}).setStrict(false);
+    voice.addTickable(sn);
+    new VF.Formatter().joinVoices([voice]).format([voice],sw-60);
+    voice.draw(ctx,stave);
   } catch(e){
-    try {
-      note.setStave(stave);
-      note.setContext(ctx).draw();
-    } catch(e2){ console.warn('Fallback draw failed:', e2); }
+    console.warn('Note draw error:',e.message);
   }
 }
 
-function midiToNoteInfo(m){
-  var oct = Math.floor(m / 12) - 1;
-  var pc = m % 12;
-  var map = [
-    {l:'C',a:''},{l:'C',a:'#'},{l:'D',a:''},{l:'D',a:'#'},
+function midiNoteInfo(m){
+  var oct=Math.floor(m/12)-1, pc=m%12;
+  var map=[{l:'C',a:''},{l:'C',a:'#'},{l:'D',a:''},{l:'D',a:'#'},
     {l:'E',a:''},{l:'F',a:''},{l:'F',a:'#'},{l:'G',a:''},
-    {l:'G',a:'#'},{l:'A',a:''},{l:'A',a:'#'},{l:'B',a:''}
-  ];
-  return { l:map[pc].l, o:oct, a:map[pc].a };
+    {l:'G',a:'#'},{l:'A',a:''},{l:'A',a:'#'},{l:'B',a:''}];
+  return {l:map[pc].l, o:oct, a:map[pc].a};
 }
 
 /* ─── UI Updates ──────────────────────────────────────────── */
-function updProgress(){
-  var html = '';
-  for(var i = 0; i < 8; i++){
-    var cls = 'pip';
-    if(i < G.ix) cls += ' done';
-    else if(i === G.ix && !G.fin) cls += ' cur';
-    html += '<div class="' + cls + '"></div>';
+function updProg(){
+  var h='';
+  for(var i=0;i<8;i++){
+    var c='pip';
+    if(i<G.ix) c+=' done';
+    else if(i===G.ix&&!G.fin) c+=' cur';
+    h+='<div class="'+c+'"></div>';
   }
-  $('prog').innerHTML = html;
+  $('prog').innerHTML=h;
 }
 
 function updTask(){
-  if(G.fin){ $('taskBox').style.display = 'none'; return; }
-  $('taskBox').style.display = '';
-  var t = G.tgt;
-  if(!t){ $('taskBox').innerHTML = 'Loading...'; return; }
-
-  var html = '';
-  if(t.p === 1){
-    html = '<b>' + ordinal(t.p) + ' partial</b> — Fundamental<br>';
-    html += 'Place <b>' + noteDisp(t.l, t.o, t.a) + '</b> on the staff.';
-    if(G.ph === 'a') html += '<br><span class="hi">Step B: Choose the correct accidental.</span>';
-    else html += '<br><span class="hi">Step A: Put the note on the right line/space.</span>';
+  if(G.fin){$('taskBox').style.display='none';return;}
+  $('taskBox').style.display='';
+  var t=G.tgt;
+  if(!t){$('taskBox').innerHTML='Loading...';return;}
+  var h='';
+  if(t.p===1){
+    h='<b>'+ord(t.p)+' partial</b> — Fundamental<br>';
+    h+='Place <b>'+noteD(t.l,t.o,t.a)+'</b> on the staff.';
+    if(G.ph==='a') h+='<br><span class="hi">Step B: Choose the correct accidental.</span>';
+    else h+='<br><span class="hi">Step A: Put the note on the right line/space.</span>';
   } else {
-    html = '<b>' + ordinal(t.p) + ' partial</b> — ' + t.intervalName + ' above ' + ordinal(t.from.p) + ' partial<br>';
-    html += t.desc;
-    if(G.ph === 'n'){
-      html += '<br><span class="hi">Step A: Put the note on the right line/space (generic ' + ordinal(t.genericNum) + ').</span>';
-      if(G.rem) html += '<br><small style="color:var(--tx3)">Staff counting: include starting note as 1</small>';
+    h='<b>'+ord(t.p)+' partial</b> — '+t.intervalName+' above '+ord(t.from.p)+' partial<br>';
+    h+=t.desc;
+    if(G.ph==='n'){
+      h+='<br><span class="hi">Step A: Put the note on the right line/space (generic '+ord(t.genericNum)+').</span>';
+      if(G.rem) h+='<br><small style="color:var(--tx3)">Staff counting: include starting note as 1</small>';
     } else {
-      html += '<br><span class="hi">Step B: Add accidental if needed (' + t.halfSteps + ' half steps).</span>';
-      if(G.rem) html += '<br><small style="color:var(--tx3)">Keyboard counting: starting key = 0, next key = 1</small>';
+      h+='<br><span class="hi">Step B: Add accidental if needed ('+t.halfSteps+' half steps).</span>';
+      if(G.rem) h+='<br><small style="color:var(--tx3)">Keyboard counting: starting key = 0, next key = 1</small>';
     }
   }
-  if(t.cents !== 0){
-    html += ' <span style="font-size:.7rem;color:var(--pu);font-family:var(--m)">' +
-      (t.cents > 0 ? '+' : '') + t.cents + '¢</span>';
+  if(t.cents!==0){
+    h+=' <span style="font-size:.7rem;color:var(--pu);font-family:var(--m)">'+(t.cents>0?'+':'')+t.cents+'¢</span>';
   }
-  $('taskBox').innerHTML = html;
+  $('taskBox').innerHTML=h;
 }
 
-function setFB(msg, type){
-  var el = $('fb');
-  el.className = 'fb ' + type;
-  el.innerHTML = msg;
-}
-function clearFB(){ $('fb').className = 'fb'; $('fb').innerHTML = ''; }
+function setFB(msg,type){$('fb').className='fb '+type; $('fb').innerHTML=msg;}
+function clearFB(){$('fb').className='fb'; $('fb').innerHTML='';}
 
-function updDoneList(){
-  var sorted = G.dn.slice().sort(function(a,b){ return a.p - b.p; });
-  var html = '';
-  for(var i = 0; i < sorted.length; i++){
-    var d = sorted[i];
-    html += '<span class="done-chip"><b>#' + d.p + '</b> ' +
-      noteDisp(d.l, d.o, d.a) + ' · ' + d.hz.toFixed(1) + ' Hz</span>';
+function updDone(){
+  var s=G.dn.slice().sort(function(a,b){return a.p-b.p;});
+  var h='';
+  for(var i=0;i<s.length;i++){
+    h+='<span class="done-chip"><b>#'+s[i].p+'</b> '+
+      noteD(s[i].l,s[i].o,s[i].a)+' · '+s[i].hz.toFixed(1)+' Hz</span>';
   }
-  $('doneList').innerHTML = html;
+  $('doneList').innerHTML=h;
 }
 
-function updAdvanced(){
-  if(G.dn.length === 0){ $('advPanel').style.display = 'none'; return; }
-  $('advPanel').style.display = '';
-  var sorted = G.dn.slice().sort(function(a,b){ return a.p - b.p; });
-  var html = '';
-  for(var i = 0; i < sorted.length; i++){
-    var d = sorted[i];
-    var fundF = midiToFreq(G.fund.m);
-    var justF = fundF * d.p;
-    var etF = midiToFreq(d.m);
-    var cOff = Math.round(1200 * Math.log2(justF / etF));
-    html += '<div class="row">#' + d.p + ' ratio ' + d.p + ':1' +
-      ' | ET: ' + etF.toFixed(1) + 'Hz | Just: ' + justF.toFixed(1) + 'Hz | ' +
-      (cOff >= 0 ? '+' : '') + cOff + '¢</div>';
+function updAdv(){
+  if(G.dn.length===0){$('advPanel').style.display='none';return;}
+  $('advPanel').style.display='';
+  var s=G.dn.slice().sort(function(a,b){return a.p-b.p;});
+  var h='';
+  for(var i=0;i<s.length;i++){
+    var d=s[i], jf=m2f(G.fund.m)*d.p, ef=m2f(d.m);
+    var co=Math.round(1200*Math.log2(jf/ef));
+    h+='<div class="row">#'+d.p+' ratio '+d.p+':1 | ET: '+ef.toFixed(1)+
+      'Hz | Just: '+jf.toFixed(1)+'Hz | '+(co>=0?'+':'')+co+'¢</div>';
   }
-  $('advContent').innerHTML = html;
+  $('advContent').innerHTML=h;
 }
 
-/* ─── Controls visibility ─────────────────────────────────── */
-function showNoteControls(){
-  $('ctrls').style.display = '';
-  $('accBar').style.display = 'none';
-  $('hsPanel').classList.remove('open');
+/* ─── Controls ────────────────────────────────────────────── */
+function showNote(){$('ctrls').style.display='';$('accBar').style.display='none';$('hsPanel').classList.remove('open');}
+function showAcc(){
+  $('ctrls').style.display='none';$('accBar').style.display='';
+  if(G.tgt&&G.tgt.p>1&&G.tgt.from) hsOpen(G.tgt.from.m,G.tgt.halfSteps,1);
 }
+function hideCtrl(){$('ctrls').style.display='none';$('accBar').style.display='none';$('hsPanel').classList.remove('open');}
 
-function showAccControls(){
-  $('ctrls').style.display = 'none';
-  $('accBar').style.display = '';
-  /* Open half-step panel for partials > 1 */
-  if(G.tgt && G.tgt.p > 1 && G.tgt.from){
-    hsOpen(G.tgt.from.m, G.tgt.halfSteps, 1);
-  }
-}
-
-function hideControls(){
-  $('ctrls').style.display = 'none';
-  $('accBar').style.display = 'none';
-  $('hsPanel').classList.remove('open');
-}
-
-/* ─── Move note ───────────────────────────────────────────── */
+/* ─── Note movement ───────────────────────────────────────── */
 function moveNote(dir){
-  var li = LETTERS.indexOf(G.pos.l);
-  li += dir;
-  if(li > 6){ li = 0; G.pos.o++; }
-  if(li < 0){ li = 6; G.pos.o--; }
-  if(G.pos.o < 0) G.pos.o = 0;
-  if(G.pos.o > 8) G.pos.o = 8;
-  G.pos.l = LETTERS[li];
-  clearFB();
-  doRender();
+  var li=LETTERS.indexOf(G.pos.l)+dir;
+  if(li>6){li=0;G.pos.o++;}
+  if(li<0){li=6;G.pos.o--;}
+  if(G.pos.o<0)G.pos.o=0;
+  if(G.pos.o>8)G.pos.o=8;
+  G.pos.l=LETTERS[li];
+  clearFB(); doRender();
 }
 
-/* ─── Confirm note position (Step A) ──────────────────────── */
+/* ─── Confirm note (Step A) ───────────────────────────────── */
 function confirmNote(){
-  var t = G.tgt;
-  if(!t) return;
-
-  if(G.pos.l === t.l && G.pos.o === t.o){
-    setFB('✓ Correct line/space! Now choose the accidental.', 'ok');
-    G.ph = 'a';
-    G.acc = '';
-    document.querySelectorAll('.acc-btn').forEach(function(b){ b.classList.remove('sel'); });
-    showAccControls();
-    updTask();
-    doRender();
-  } else if(G.pos.l === t.l && G.pos.o !== t.o){
-    setFB('Correct note name, wrong octave — move it ' +
-      (G.pos.o < t.o ? 'up' : 'down') + '.', 'wr');
+  var t=G.tgt; if(!t) return;
+  if(G.pos.l===t.l && G.pos.o===t.o){
+    setFB('✓ Correct line/space! Now choose the accidental.','ok');
+    G.ph='a'; G.acc='';
+    document.querySelectorAll('.acc-btn').forEach(function(b){b.classList.remove('sel');});
+    showAcc(); updTask(); doRender();
+  } else if(G.pos.l===t.l){
+    setFB('Correct note name, wrong octave — move it '+(G.pos.o<t.o?'up':'down')+'.','wr');
   } else {
-    if(t.p === 1){
-      setFB('Not quite. Place ' + t.l + t.o + ' on the staff.', 'er');
-    } else {
-      setFB('Check the generic interval: a ' + ordinal(t.genericNum) +
-        ' above ' + noteDisp(t.from.l, t.from.o, t.from.a) +
-        '. Count staff positions (including the starting note as 1).', 'er');
-    }
+    if(t.p===1) setFB('Not quite. Place '+t.l+t.o+' on the staff.','er');
+    else setFB('Check the generic interval: a '+ord(t.genericNum)+
+      ' above '+noteD(t.from.l,t.from.o,t.from.a)+
+      '. Count staff positions (including the starting note as 1).','er');
   }
 }
 
 /* ─── Pick accidental ─────────────────────────────────────── */
 function pickAcc(a){
-  G.acc = a;
+  G.acc=a;
   document.querySelectorAll('.acc-btn').forEach(function(btn){
-    btn.classList.toggle('sel', btn.getAttribute('data-a') === a);
+    btn.classList.toggle('sel',btn.getAttribute('data-a')===a);
   });
   doRender();
 }
 
 /* ─── Confirm accidental (Step B) ─────────────────────────── */
 function confirmAcc(){
-  var t = G.tgt;
-  if(!t) return;
-
-  var curMidi = toMidi(G.pos.l, G.acc, G.pos.o);
-
-  if(G.acc === t.a){
-    /* Correct! */
-    G.dn.push({ p:t.p, l:t.l, o:t.o, a:t.a, m:t.m, hz:t.hz });
-    setFB('✓ Correct! ' + ordinal(t.p) + ' partial: ' +
-      noteDisp(t.l, t.o, t.a) + ' (' + t.hz.toFixed(1) + ' Hz)', 'ok');
-    playNote(t.hz, 0.6);
-    updDoneList();
-    updAdvanced();
+  var t=G.tgt; if(!t) return;
+  var cm=toMidi(G.pos.l,G.acc,G.pos.o);
+  if(G.acc===t.a){
+    G.dn.push({p:t.p,l:t.l,o:t.o,a:t.a,m:t.m,hz:t.hz});
+    setFB('✓ Correct! '+ord(t.p)+' partial: '+noteD(t.l,t.o,t.a)+' ('+t.hz.toFixed(1)+' Hz)','ok');
+    playNote(t.hz,0.6);
+    updDone(); updAdv();
     G.ix++;
-    if(G.ix >= TORDER.length) finish();
-    else setTimeout(nextPartial, 1200);
-  } else if(curMidi === t.m){
-    setFB('Enharmonic warning: right pitch, wrong spelling. The generic interval must be a ' +
-      ordinal(t.genericNum) + ', so the letter name must be <b>' + t.l + '</b>. Fix the spelling.', 'wr');
+    if(G.ix>=TORDER.length) finish();
+    else setTimeout(nextPartial,1200);
+  } else if(cm===t.m){
+    setFB('Enharmonic warning: right pitch, wrong spelling. The generic interval must be a '+
+      ord(t.genericNum)+', so the letter name must be <b>'+t.l+'</b>. Fix the spelling.','wr');
   } else {
-    if(t.p === 1){
-      setFB('Not the right accidental for ' + noteDisp(t.l, t.o, t.a) + '. Try again.', 'er');
-    } else {
-      setFB('Count the half steps: ' + t.halfSteps + ' half steps = ' + t.intervalName +
-        '. Use the keyboard to check!', 'er');
-    }
+    if(t.p===1) setFB('Not the right accidental for '+noteD(t.l,t.o,t.a)+'. Try again.','er');
+    else setFB('Count the half steps: '+t.halfSteps+' half steps = '+t.intervalName+
+      '. Use the keyboard to check!','er');
   }
 }
 
 /* ─── Next partial ────────────────────────────────────────── */
 function nextPartial(){
-  clearFB();
-  clearKB();
-  G.ph = 'n';
-  G.acc = '';
-  document.querySelectorAll('.acc-btn').forEach(function(b){ b.classList.remove('sel'); });
-
-  var pNum = TORDER[G.ix];
-  G.tgt = calcTarget(pNum);
-
-  if(G.tgt.from){
-    G.pos.l = G.tgt.from.l;
-    G.pos.o = G.tgt.from.o;
-  } else {
-    G.pos.l = 'B'; G.pos.o = 3;
-  }
-
-  showNoteControls();
-  updTask();
-  updProgress();
-  doRender();
+  clearFB(); clearKB(); G.ph='n'; G.acc='';
+  document.querySelectorAll('.acc-btn').forEach(function(b){b.classList.remove('sel');});
+  G.tgt=calcTarget(TORDER[G.ix]);
+  if(G.tgt.from){G.pos.l=G.tgt.from.l; G.pos.o=G.tgt.from.o;}
+  else {G.pos.l='B'; G.pos.o=3;}
+  showNote(); updTask(); updProg(); doRender();
 }
 
 /* ─── Finish ──────────────────────────────────────────────── */
 function finish(){
-  G.fin = true;
-  hideControls();
-  updProgress();
-  updTask();
-
-  $('finishBox').style.display = '';
-  $('finishBox').innerHTML = '<h2>🎉 All 8 partials complete!</h2>' +
-    '<p>More partials continue: whole-tone-ish (9–12), then chromatic-ish (13–16), then microtonal.</p>' +
+  G.fin=true; hideCtrl(); updProg(); updTask();
+  $('finishBox').style.display='';
+  $('finishBox').innerHTML='<h2>🎉 All 8 partials complete!</h2>'+
+    '<p>More partials continue: whole-tone-ish (9–12), then chromatic-ish (13–16), then microtonal.</p>'+
     '<p style="color:var(--tx3);font-size:.78rem;margin-top:8px">Partials 9–16 shown as small gray notes on the staff.</p>';
-
   doRender();
 }
 
-/* ─── Go: start a round ───────────────────────────────────── */
-function go(letter, oct, acc){
-  G.fund = { l:letter, o:oct, a:acc||'', m:toMidi(letter, acc||'', oct) };
-  G.ix = 0;
-  G.dn = [];
-  G.fin = false;
-  G.streak = 0;
-  $('finishBox').style.display = 'none';
-  $('doneList').innerHTML = '';
-  $('advContent').innerHTML = '';
-  $('advPanel').style.display = 'none';
-  clearFB();
-  nextPartial();
+/* ─── Go: start round ─────────────────────────────────────── */
+function go(l,o,a){
+  G.fund={l:l,o:o,a:a||'',m:toMidi(l,a||'',o)};
+  G.ix=0; G.dn=[]; G.fin=false;
+  $('finishBox').style.display='none';
+  $('doneList').innerHTML='';
+  $('advContent').innerHTML='';
+  $('advPanel').style.display='none';
+  clearFB(); nextPartial();
 }
 
-/* ─── Full render ─────────────────────────────────────────── */
+/* ─── Render all ──────────────────────────────────────────── */
 function doRender(){
   renderStaff();
   if(!G.fin){
-    if(G.ph === 'n'){
-      hlKey(toMidi(G.pos.l, '', G.pos.o));
-    } else if(G.ph === 'a'){
-      hlKey(toMidi(G.pos.l, G.acc, G.pos.o));
-    }
+    if(G.ph==='n') hlKey(toMidi(G.pos.l,'',G.pos.o));
+    else hlKey(toMidi(G.pos.l,G.acc,G.pos.o));
   }
-  updProgress();
+  updProg();
 }
 
 /* ─── Toggles ─────────────────────────────────────────────── */
 function toggleRem(){
-  G.rem = !G.rem;
-  $('btnRem').textContent = 'Reminders: ' + (G.rem ? 'ON' : 'OFF');
-  $('btnRem').classList.toggle('on', G.rem);
-  $('hsCheat').style.display = G.rem ? '' : 'none';
+  G.rem=!G.rem;
+  $('btnRem').textContent='Reminders: '+(G.rem?'ON':'OFF');
+  $('btnRem').classList.toggle('on',G.rem);
+  $('hsCheat').style.display=G.rem?'':'none';
   updTask();
 }
 
 function toggleMode(){
-  if(G.mode === 'tutorial'){
-    G.mode = 'practice';
-    $('btnMode').textContent = 'Tutorial';
-    $('btnMode').classList.add('on');
-    $('pracBar').style.display = '';
-    G.rem = false;
-    $('btnRem').textContent = 'Reminders: OFF';
-    $('btnRem').classList.remove('on');
+  if(G.mode==='tutorial'){
+    G.mode='practice';
+    $('btnMode').textContent='Tutorial'; $('btnMode').classList.add('on');
+    $('pracBar').style.display='';
+    G.rem=false; $('btnRem').textContent='Reminders: OFF'; $('btnRem').classList.remove('on');
   } else {
-    G.mode = 'tutorial';
-    $('btnMode').textContent = 'Practice';
-    $('btnMode').classList.remove('on');
-    $('pracBar').style.display = 'none';
-    G.rem = true;
-    $('btnRem').textContent = 'Reminders: ON';
-    $('btnRem').classList.add('on');
-    go('B', 2, '');
+    G.mode='tutorial';
+    $('btnMode').textContent='Practice'; $('btnMode').classList.remove('on');
+    $('pracBar').style.display='none';
+    G.rem=true; $('btnRem').textContent='Reminders: ON'; $('btnRem').classList.add('on');
+    go('B',2,'');
   }
 }
 
-function toggleHelp(){ $('helpModal').classList.toggle('open'); }
+function toggleHelp(){$('helpModal').classList.toggle('open');}
 
-/* ─── Practice mode ───────────────────────────────────────── */
+/* ─── Practice ────────────────────────────────────────────── */
 function pracGo(){
-  var v = $('fsel').value.split('|');
-  var noteStr = v[0];
-  var oct = parseInt(v[1]);
-  var letter = noteStr.replace(/[#b]/g, '');
-  var acc = noteStr.includes('#') ? '#' : noteStr.includes('b') ? 'b' : '';
-  go(letter, oct, acc);
+  var v=$('fsel').value.split('|');
+  var ns=v[0], o=parseInt(v[1]);
+  var l=ns.replace(/[#b]/g,'');
+  var a=ns.indexOf('#')>=0?'#':ns.indexOf('b')>=0?'b':'';
+  go(l,o,a);
 }
-
 function pracRandom(){
-  var notes = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
-  var n, o;
-  if(Math.random() < 0.8){
-    o = Math.random() < 0.5 ? 2 : 3;
-    n = notes[Math.floor(Math.random() * notes.length)];
+  var ns=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  var n,o;
+  if(Math.random()<0.8){
+    o=Math.random()<0.5?2:3;
+    n=ns[Math.floor(Math.random()*ns.length)];
   } else {
-    o = 1 + Math.floor(Math.random() * 4);
-    n = notes[Math.floor(Math.random() * notes.length)];
-    if(o === 1 && notes.indexOf(n) < notes.indexOf('F')) n = 'F';
-    if(o === 4 && notes.indexOf(n) > notes.indexOf('F')) n = 'F';
+    o=1+Math.floor(Math.random()*4);
+    n=ns[Math.floor(Math.random()*ns.length)];
+    if(o===1&&ns.indexOf(n)<ns.indexOf('F')) n='F';
+    if(o===4&&ns.indexOf(n)>ns.indexOf('F')) n='F';
   }
-  var letter = n.replace(/[#b]/g, '');
-  var acc = n.includes('#') ? '#' : n.includes('b') ? 'b' : '';
-  go(letter, o, acc);
+  var l=n.replace(/[#b]/g,'');
+  var a=n.indexOf('#')>=0?'#':n.indexOf('b')>=0?'b':'';
+  go(l,o,a);
 }
-
 function popSel(){
-  var s = $('fsel');
-  s.innerHTML = '';
-  var ns = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
-  for(var o = 1; o <= 4; o++){
-    for(var ni = 0; ni < ns.length; ni++){
-      if(o === 1 && ni < ns.indexOf('F')) continue;
-      if(o === 4 && ni > ns.indexOf('F')) continue;
-      var op = document.createElement('option');
-      op.value = ns[ni] + '|' + o;
-      op.textContent = ns[ni] + o;
-      s.appendChild(op);
-    }
+  var s=$('fsel'); s.innerHTML='';
+  var ns=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  for(var o=1;o<=4;o++) for(var i=0;i<ns.length;i++){
+    if(o===1&&i<ns.indexOf('F')) continue;
+    if(o===4&&i>ns.indexOf('F')) continue;
+    var op=document.createElement('option');
+    op.value=ns[i]+'|'+o; op.textContent=ns[i]+o; s.appendChild(op);
   }
 }
 
 /* ─── VexFlow self-test ───────────────────────────────────── */
 function selfTest(){
   if(!VF) return;
-  var d = document.createElement('div');
-  d.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:400px;height:200px';
+  var d=document.createElement('div');
+  d.style.cssText='position:absolute;left:-9999px;top:-9999px;width:400px;height:200px';
   document.body.appendChild(d);
-
-  var accs = ['bb','b','','#','##'];
-  for(var ai = 0; ai < accs.length; ai++){
+  var accs=['bb','b','','#','##'];
+  for(var ai=0;ai<accs.length;ai++){
     try {
-      d.innerHTML = '';
-      var r = new VF.Renderer(d, VF.Renderer.Backends.SVG);
-      r.resize(300, 150);
-      var c = r.getContext();
-      var st = new VF.Stave(10, 10, 250).addClef('treble').setContext(c).draw();
-      var n = new VF.StaveNote({ keys:['c/4'], duration:'q' });
-      if(accs[ai]) n.addModifier(new VF.Accidental(accs[ai]));
-      var v = new VF.Voice({ num_beats:1, beat_value:4 }).setStrict(false);
+      d.innerHTML='';
+      var r=new VF.Renderer(d,VF.Renderer.Backends.SVG);
+      r.resize(300,150); var c=r.getContext();
+      var st=new VF.Stave(10,10,250).addClef('treble').setContext(c).draw();
+      var n=new VF.StaveNote({keys:['c/4'],duration:'q'});
+      if(accs[ai]) n.addAccidental(0,new VF.Accidental(accs[ai]));
+      var v=new VF.Voice({num_beats:1,beat_value:4}).setStrict(false);
       v.addTickable(n);
-      new VF.Formatter().joinVoices([v]).format([v], 200);
-      v.draw(c, st);
-    } catch(e){
-      AOK[accs[ai]] = false;
-      console.warn('Accidental unavailable:', accs[ai], e);
-    }
+      new VF.Formatter().joinVoices([v]).format([v],200);
+      v.draw(c,st);
+    } catch(e){ AOK[accs[ai]]=false; console.warn('Acc unavail:',accs[ai],e); }
   }
   document.body.removeChild(d);
-
-  var anyDisabled = false;
+  var any=false;
   document.querySelectorAll('.acc-btn').forEach(function(btn){
-    if(!AOK[btn.getAttribute('data-a')]){
-      btn.disabled = true;
-      anyDisabled = true;
-    }
+    if(!AOK[btn.getAttribute('data-a')]){btn.disabled=true; any=true;}
   });
-  if(anyDisabled){
-    setFB('Some accidentals unavailable in this VexFlow build.', 'wr');
-    setTimeout(clearFB, 3000);
-  }
+  if(any){setFB('Some accidentals unavailable in this VexFlow build.','wr');setTimeout(clearFB,3000);}
 }
 
-/* ─── Event listeners (not inline) ────────────────────────── */
+/* ─── Wire up all event listeners ─────────────────────────── */
 $('startBtn').addEventListener('click', startAudio);
 $('btnMode').addEventListener('click', toggleMode);
 $('btnRem').addEventListener('click', toggleRem);
 $('btnHelp').addEventListener('click', toggleHelp);
 $('helpClose').addEventListener('click', toggleHelp);
-$('btnUp').addEventListener('click', function(){ moveNote(1); });
-$('btnDn').addEventListener('click', function(){ moveNote(-1); });
+$('helpModal').addEventListener('click',function(e){if(e.target===this)toggleHelp();});
+$('btnUp').addEventListener('click',function(){moveNote(1);});
+$('btnDn').addEventListener('click',function(){moveNote(-1);});
 $('btnOk').addEventListener('click', confirmNote);
 $('btnAccOk').addEventListener('click', confirmAcc);
-$('hsPrev').addEventListener('click', function(){ hsStep(-1); });
-$('hsNext').addEventListener('click', function(){ hsStep(1); });
+$('hsPrev').addEventListener('click',function(){hsStep(-1);});
+$('hsNext').addEventListener('click',function(){hsStep(1);});
 $('hsCloseBtn').addEventListener('click', hsClose);
 $('btnPlayF').addEventListener('click', playFund);
 $('btnPlayS').addEventListener('click', playSeries);
 $('btnRand').addEventListener('click', pracRandom);
 $('btnPGo').addEventListener('click', pracGo);
-$('helpModal').addEventListener('click', function(e){ if(e.target === this) toggleHelp(); });
-
-/* Accidental buttons */
 document.querySelectorAll('.acc-btn').forEach(function(btn){
-  btn.addEventListener('click', function(){ pickAcc(this.getAttribute('data-a')); });
+  btn.addEventListener('click',function(){pickAcc(this.getAttribute('data-a'));});
 });
 
-/* ─── Boot ────────────────────────────────────────────────── */
+var resizeT;
+window.addEventListener('resize',function(){clearTimeout(resizeT);resizeT=setTimeout(doRender,200);});
+
+/* ─── Boot (called after audio overlay dismissed) ─────────── */
 function boot(){
   if(!VF){
-    $('notation').innerHTML = '<p style="color:red;padding:12px">VexFlow failed to load. Please reload.</p>';
-    console.error('VexFlow not found');
+    $('notation').innerHTML='<p style="color:red;padding:12px">VexFlow failed to load. Please reload the page.</p>';
   }
   buildKB();
   selfTest();
   popSel();
-  $('btnRem').classList.add('on');
-  go('B', 2, '');
+  go('B',2,'');
 }
-
-/* Resize handler */
-var resizeTimer;
-window.addEventListener('resize', function(){
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(doRender, 200);
-});
 </script>
 </body>
 </html>
