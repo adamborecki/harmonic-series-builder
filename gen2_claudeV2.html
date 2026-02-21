@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Harmonic Series Builder</title>
+<!-- VexFlow 4 for grand staff notation -->
+<script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.6/build/cjs/vexflow.js"></script>
+<!-- Tone.js for sine-wave audio -->
+<script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   THEME & RESET
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:#0e1019; --bg2:#161a28; --bg3:#1e2336; --bdr:#2a304e;
+  --tx:#dde0ec; --tx2:#8890a8; --tx3:#555a72;
+  --ac:#5e9cff; --ac2:rgba(94,156,255,.16);
+  --ok:#3dd68c; --ok2:rgba(61,214,140,.14);
+  --wr:#f5b731; --wr2:rgba(245,183,49,.14);
+  --er:#ef6461; --er2:rgba(239,100,97,.14);
+  --pu:#a78bfa;
+  --r:10px; --rs:6px;
+  --f:'DM Sans',system-ui,sans-serif;
+  --m:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+html,body{font-family:var(--f);background:var(--bg);color:var(--tx);
+  min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body{padding-bottom:40px}
+button{font-family:var(--f);cursor:pointer}
+a{color:var(--ac)}
+
+/* ═══════ Audio Overlay ═══════ */
+#overlay{position:fixed;inset:0;z-index:9999;background:rgba(14,16,25,.97);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;
+  backdrop-filter:blur(5px)}
+#overlay.off{display:none}
+#overlay button{font-size:1.15rem;font-weight:700;padding:18px 44px;
+  border:2px solid var(--ac);border-radius:var(--r);background:var(--ac2);
+  color:var(--ac);transition:.15s}
+#overlay button:hover{background:var(--ac);color:var(--bg)}
+#overlay p{color:var(--tx2);font-size:.82rem}
+
+/* ═══════ Header ═══════ */
+.hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-bottom:1px solid var(--bdr);flex-wrap:wrap;gap:6px}
+.logo{font-size:1rem;font-weight:700;
+  background:linear-gradient(135deg,var(--ac),var(--pu));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text}
+.hdr-r{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:.72rem;font-weight:600;padding:5px 11px;border:1px solid var(--bdr);
+  border-radius:18px;background:var(--bg2);color:var(--tx2);transition:.12s;white-space:nowrap}
+.pill:hover{border-color:var(--ac);color:var(--ac)}
+.pill.on{background:var(--ac);color:var(--bg);border-color:var(--ac)}
+
+/* ═══════ Layout ═══════ */
+.wrap{max-width:680px;margin:0 auto;padding:10px 10px 0}
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:12px;margin-bottom:10px}
+.cardt{font-size:.72rem;font-weight:600;color:var(--tx2);text-transform:uppercase;
+  letter-spacing:.04em;margin-bottom:8px}
+
+/* ═══════ Notation ═══════ */
+#staffBox{background:#fff;border-radius:var(--r);border:1px solid var(--bdr);
+  padding:6px 2px;margin-bottom:10px;min-height:250px;
+  display:flex;align-items:center;justify-content:center;overflow-x:auto}
+
+/* ═══════ Progress ═══════ */
+.pbar{display:flex;gap:3px;margin-bottom:10px}
+.pip{flex:1;height:5px;border-radius:3px;background:var(--bg3);transition:background .3s}
+.pip.d{background:var(--ok)} .pip.c{background:var(--ac);animation:pu 1.4s infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ═══════ Task ═══════ */
+.task{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:12px;margin-bottom:10px}
+.task-l{font-size:.7rem;font-weight:700;color:var(--ac);text-transform:uppercase;
+  letter-spacing:.03em;margin-bottom:3px}
+.task-t{font-size:.88rem;line-height:1.5}
+.hi{color:var(--ac);font-weight:600}
+.nn{font-family:var(--m);font-weight:600;color:var(--wr)}
+
+/* ═══════ Feedback ═══════ */
+.fb{padding:9px 12px;border-radius:var(--rs);margin-bottom:8px;font-size:.82rem;
+  line-height:1.4;display:none}
+.fb.v{display:block}
+.fb.ok{background:var(--ok2);border:1px solid var(--ok);color:var(--ok)}
+.fb.er{background:var(--er2);border:1px solid var(--er);color:var(--er)}
+.fb.wr{background:var(--wr2);border:1px solid var(--wr);color:var(--wr)}
+
+/* ═══════ Buttons ═══════ */
+.row{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;justify-content:center}
+.b{font-size:.82rem;font-weight:600;padding:11px 15px;border:1px solid var(--bdr);
+  border-radius:var(--rs);background:var(--bg3);color:var(--tx);transition:.12s;
+  min-width:46px;text-align:center;user-select:none;-webkit-user-select:none}
+.b:hover:not(:disabled){border-color:var(--ac);color:var(--ac)}
+.b:active:not(:disabled){transform:scale(.96)}
+.b:disabled{opacity:.25;cursor:not-allowed}
+.b.p{background:var(--ac);color:var(--bg);border-color:var(--ac)}
+.b.p:hover:not(:disabled){background:#7db4ff}
+.b.s{border-color:var(--ac);color:var(--ac);background:var(--ac2)}
+
+/* ═══════ Keyboard ═══════ */
+.kbw{position:relative;overflow-x:auto;overflow-y:hidden;
+  -webkit-overflow-scrolling:touch;border-radius:var(--r);
+  border:1px solid var(--bdr);background:#080a12;padding:5px 3px 3px}
+.kb{display:flex;position:relative;height:118px;min-width:max-content}
+.k{position:relative;cursor:pointer;user-select:none;flex-shrink:0;transition:background .08s}
+.kw{width:32px;height:114px;background:#ededed;border:1px solid #b5b5b5;
+  border-radius:0 0 4px 4px;z-index:1}
+.kw:active,.kw.pr{background:#c4d2ff}
+.kw.hl{background:#5e9cff!important} .kw.st{background:#3dd68c!important}
+.kk{width:22px;height:70px;background:#15152a;border:1px solid #000;
+  border-radius:0 0 3px 3px;margin-left:-11px;margin-right:-11px;z-index:2}
+.kk:active,.kk.pr{background:#33335a}
+.kk.hl{background:#5e9cff!important} .kk.st{background:#3dd68c!important}
+.klb{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
+  font-size:.5rem;color:#999;pointer-events:none;font-family:var(--m)}
+.kk .klb{color:#555;bottom:2px;font-size:.44rem}
+.cbd{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);
+  font-family:var(--m);font-size:.6rem;font-weight:700;color:#fff;
+  background:rgba(0,0,0,.72);border-radius:50%;width:17px;height:17px;
+  display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5}
+
+/* ═══════ Half-step panel ═══════ */
+.hsp{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:10px;margin-bottom:8px;display:none}
+.hsp.v{display:block}
+.hsp-i{font-size:.76rem;color:var(--tx2);margin-bottom:6px;line-height:1.4}
+.hsp-c{font-family:var(--m);font-size:1rem;font-weight:700;color:var(--ac);margin:3px 0}
+.hsp-ch{font-size:.66rem;color:var(--tx3);font-family:var(--m);margin-top:5px;
+  padding:3px 6px;background:rgba(94,156,255,.06);border-radius:3px;display:inline-block}
+
+/* ═══════ Chips ═══════ */
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chip{font-family:var(--m);font-size:.66rem;padding:2px 7px;border-radius:3px;
+  background:var(--bg3);border:1px solid var(--bdr);color:var(--tx2)}
+.chip .hz{color:var(--tx3);margin-left:3px}
+.cbg{display:inline-block;font-family:var(--m);font-size:.64rem;padding:2px 5px;
+  border-radius:3px;background:var(--bg3);color:var(--pu);border:1px solid var(--bdr);margin-left:5px}
+
+/* ═══════ Advanced ═══════ */
+.advt{font-size:.68rem;color:var(--tx3);cursor:pointer;border:none;background:none;
+  text-decoration:underline;font-family:var(--f);margin-top:5px}
+.advp{display:none;padding:6px;margin-top:5px;font-size:.7rem;color:var(--tx2);
+  font-family:var(--m);background:var(--bg);border-radius:var(--rs);line-height:1.6}
+.advp.v{display:block}
+
+/* ═══════ Modal ═══════ */
+.mov{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.7);
+  display:none;align-items:center;justify-content:center;padding:16px}
+.mov.v{display:flex}
+.mod{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:20px;max-width:400px;width:100%;max-height:80vh;overflow-y:auto}
+.mod h3{font-size:.92rem;margin-bottom:10px;color:var(--ac)}
+.mod p{font-size:.8rem;line-height:1.6;color:var(--tx2);margin-bottom:6px}
+
+/* ═══════ Practice ═══════ */
+.pcl{display:none;gap:7px;margin-bottom:10px;flex-wrap:wrap;align-items:center}
+.pcl.v{display:flex}
+.pse{font-family:var(--f);font-size:.8rem;padding:7px 10px;background:var(--bg3);
+  border:1px solid var(--bdr);border-radius:var(--rs);color:var(--tx)}
+.stk{font-family:var(--m);font-size:.74rem;color:var(--wr)}
+
+/* ═══════ Toast ═══════ */
+.tst{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--r);
+  padding:8px 18px;font-size:.76rem;color:var(--tx2);z-index:200;
+  opacity:0;transition:opacity .3s;pointer-events:none}
+.tst.v{opacity:1}
+
+/* ═══════ Done message ═══════ */
+.done{display:none}.done.v{display:block}
+.done p{font-size:.82rem;line-height:1.55}
+
+/* ═══════ Scrollbar ═══════ */
+::-webkit-scrollbar{height:5px;width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+
+/* ═══════ Responsive ═══════ */
+@media(max-width:480px){
+  .hdr{padding:8px 10px} .wrap{padding:6px 6px 0}
+  .b{padding:9px 12px;font-size:.78rem}
+  .kw{width:27px;height:98px} .kk{width:18px;height:60px;margin-left:-9px;margin-right:-9px}
+  .kb{height:102px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════ AUDIO OVERLAY ═══════ -->
+<div id="overlay">
+  <p>🎵 Harmonic Series Builder</p>
+  <button onclick="startAudio()">Tap to Enable Audio</button>
+  <p style="font-size:.72rem;margin-top:6px">Audio required for this lesson</p>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="tst"></div>
+
+<!-- Help Modal -->
+<div id="helpM" class="mov" onclick="if(event.target===this)this.classList.remove('v')">
+  <div class="mod">
+    <h3>Help &amp; Resources</h3>
+    <p>Build the first 8 partials of the harmonic series on a grand staff, then see partials 9–16.</p>
+    <p><strong>Staff counting (generic intervals):</strong> Include the starting note as 1.</p>
+    <p><strong>Keyboard counting (half steps):</strong> Do NOT include the starting key — the next key is 1.</p>
+    <p><strong>Learn more:</strong></p>
+    <p>
+      <a href="https://www.musictheory.net/lessons/10" target="_blank">Staff &amp; Clefs</a> ·
+      <a href="https://www.musictheory.net/lessons/20" target="_blank">Accidentals</a> ·
+      <a href="https://www.musictheory.net/lessons/30" target="_blank">Generic Intervals</a> ·
+      <a href="https://www.musictheory.net/lessons/31" target="_blank">Specific Intervals</a> ·
+      <a href="https://www.musictheory.net/lessons/32" target="_blank">Writing Intervals</a>
+    </p>
+    <button class="b p" style="width:100%;margin-top:12px" onclick="$('helpM').classList.remove('v')">Close</button>
+  </div>
+</div>
+
+<!-- ═══════ HEADER ═══════ -->
+<header class="hdr">
+  <div class="logo">Harmonic Series Builder</div>
+  <div class="hdr-r">
+    <button class="pill on" id="pTut" onclick="setMode('tut')">Tutorial</button>
+    <button class="pill" id="pPrac" onclick="setMode('prac')">Practice</button>
+    <button class="pill on" id="pRem" onclick="togRem()">Reminders: ON</button>
+    <button class="pill" onclick="$('helpM').classList.add('v')">Help</button>
+  </div>
+</header>
+
+<!-- ═══════ MAIN ═══════ -->
+<div class="wrap">
+
+  <!-- Practice controls -->
+  <div class="pcl" id="pcl">
+    <select class="pse" id="fsel"></select>
+    <button class="b" onclick="rndFund()">Random</button>
+    <button class="b p" onclick="goPrac()">Start</button>
+    <span class="stk" id="stk"></span>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="pbar" id="pbar"></div>
+
+  <!-- Staff -->
+  <div id="staffBox"></div>
+
+  <!-- Task -->
+  <div class="task">
+    <div class="task-l" id="tL">Loading…</div>
+    <div class="task-t" id="tT"></div>
+  </div>
+
+  <!-- Feedback -->
+  <div class="fb" id="fb"></div>
+
+  <!-- Note controls (Step A) -->
+  <div class="row" id="nCtl">
+    <button class="b" id="bUp" onclick="mv(1)">⬆️ Move Note Up</button>
+    <button class="b" id="bDn" onclick="mv(-1)">⬇️ Move Note Down</button>
+    <button class="b p" id="bOk" onclick="okPos()">Confirm</button>
+  </div>
+
+  <!-- Accidental controls (Step B) -->
+  <div class="row" id="aCtl" style="display:none">
+    <button class="b" data-a="bb" onclick="pAcc('bb')">𝄫</button>
+    <button class="b" data-a="b" onclick="pAcc('b')">♭</button>
+    <button class="b" data-a="" onclick="pAcc('')">♮</button>
+    <button class="b" data-a="#" onclick="pAcc('#')">♯</button>
+    <button class="b" data-a="##" onclick="pAcc('##')">𝄪</button>
+    <button class="b p" id="bAOk" onclick="okAcc()" disabled>Confirm Accidental</button>
+  </div>
+
+  <!-- Half-step check -->
+  <div class="hsp" id="hsp">
+    <div class="hsp-i" id="hsI"></div>
+    <div class="hsp-c" id="hsC">Count: 0</div>
+    <div class="row">
+      <button class="b" id="hsP" onclick="hsS(-1)" style="display:none">← Prev half-step</button>
+      <button class="b" id="hsN" onclick="hsS(1)">Next half-step →</button>
+      <button class="b" onclick="hsR()">Reset</button>
+    </div>
+    <div class="hsp-ch" id="hsCh">P5=7 · P4=5 · M3=4 · m3=3 · M2=2</div>
+  </div>
+
+  <!-- Audio buttons + cents -->
+  <div class="row">
+    <button class="b" onclick="pFund()">▶ Play Fundamental</button>
+    <button class="b" onclick="pSer()">▶ Play Series</button>
+  </div>
+  <div id="cA" style="margin-bottom:6px"></div>
+
+  <!-- Keyboard -->
+  <div class="card">
+    <div class="cardt">Keyboard</div>
+    <div class="kbw" id="kbw"><div class="kb" id="kb"></div></div>
+  </div>
+
+  <!-- Completed partials -->
+  <div class="card" id="pCard">
+    <div class="cardt">Completed Partials</div>
+    <div class="chips" id="pList"></div>
+    <button class="advt" id="advB" onclick="$('advD').classList.toggle('v');this.textContent=$('advD').classList.contains('v')?'Hide ratios':'Show ratios'">Show ratios</button>
+    <div class="advp" id="advD"></div>
+  </div>
+
+  <!-- Done message -->
+  <div class="card done" id="doneM">
+    <p><strong>All 8 partials placed!</strong><br>
+    More partials continue: whole-tone-ish (9–12), then chromatic-ish (13–16), then increasingly microtonal.<br>
+    Partials 9–16 are shown on the staff as small gray notes.</p>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   HARMONIC SERIES BUILDER — Application Logic
+   ═══════════════════════════════════════════════════════ */
+"use strict";
+
+const $ = id => document.getElementById(id);
+const VF = Vex.Flow;
+
+/* ─── Constants ──────────────────────────────────── */
+const L = ['C','D','E','F','G','A','B']; // note letters
+const SM = {C:0,D:2,E:4,F:5,G:7,A:9,B:11}; // semitones from C
+const RAT = [,'1:1','2:1','3:2','4:1','5:4','6:5','7:6','8:1',
+  '9:8','10:9','11:10','12:11','13:12','14:13','15:14','16:15'];
+const ORD = [1,2,3,4,5,6,8,7]; // tutorial order (8th before 7th!)
+const AOK = {bb:true,b:true,'':true,'#':true,'##':true}; // accidental availability
+
+/* ─── State ──────────────────────────────────────── */
+let mode='tut', rem=true, aOk=false, syn=null, strk=0;
+let G={}, tgt=null; // G=game state, tgt=current target
+
+/* ─── Utility ────────────────────────────────────── */
+function midi(lt,ac,oc){
+  let m=SM[lt];
+  if(ac==='#')m++;else if(ac==='##')m+=2;else if(ac==='b')m--;else if(ac==='bb')m-=2;
+  return m+(oc+1)*12;
+}
+function mhz(m){return 440*Math.pow(2,(m-69)/12)}
+function phz(fh,n){return fh*n}
+function pcents(n){const c=1200*Math.log2(n);return Math.round(c-Math.round(c/100)*100)}
+function ord(n){const s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0])}
+function fmt(lt,ac){const s={bb:'𝄫',b:'♭','':'','#':'♯','##':'𝄪'};return lt+(s[ac]??ac??'')}
+
+/* ─── Staff positions (letter+octave, no acc) ────── */
+const POS=[];
+(()=>{for(let o=1;o<=7;o++)for(const c of L){POS.push({l:c,o});if(o===7&&c==='C')return}})();
+function pI(l,o){return POS.findIndex(p=>p.l===l&&p.o===o)}
+
+/* ─── Compute target for a partial ───────────────── */
+function calcTgt(fL,fO,fA,pn){
+  const fM=midi(fL,fA,fO), fHz=mhz(fM), hz=phz(fHz,pn);
+  const mF=69+12*Math.log2(hz/440), tm=Math.round(mF), ct=Math.round((mF-tm)*100);
+  // Interval parameters per partial
+  let off=0,iN='',hs=0,fp=null,desc='';
+  switch(pn){
+    case 1:off=0;iN='Unison';hs=0;fp=null;desc='Place the fundamental';break;
+    case 2:off=0;iN='Octave';hs=12;fp=1;desc='Octave above the 1st partial';break;
+    case 3:off=4;iN='Perfect 5th';hs=7;fp=2;
+      desc='Perfect 5th above the 2nd partial (generic 5th first, then 7 half steps)';break;
+    case 4:off=0;iN='Octave';hs=12;fp=2;
+      desc='Octave above the 2nd partial (two octaves above fundamental)';break;
+    case 5:off=2;iN='Major 3rd';hs=4;fp=4;
+      desc='Major 3rd above the 4th partial (generic 3rd first, then 4 half steps)';break;
+    case 6:off=2;iN='Minor 3rd';hs=3;fp=5;
+      desc='Minor 3rd above the 5th partial (generic 3rd, then 3 half steps)';break;
+    case 7:off=2;iN='Minor 3rd';hs=3;fp=6;
+      desc='Minor 3rd above the 6th partial (generic 3rd, then 3 half steps)';break;
+    case 8:off=0;iN='Octave';hs=12;fp=4;
+      desc='Octave above the 4th partial (three octaves above fundamental)';break;
+    default: // For partials 9-16, compute generically
+      off=0;iN='';hs=0;fp=null;desc='';break;
+  }
+  // "From" note
+  let fl=fL,fo=fO,fa=fA,fm=fM;
+  if(fp&&fp!==pn){const r=calcTgt(fL,fO,fA,fp);fl=r.lt;fo=r.oc;fa=r.ac;fm=r.mi;}
+  // Target letter
+  const fi=L.indexOf(fl), ti=(fi+off)%7, tL=L[ti];
+  // Target octave
+  let bO=fo,bD=999;
+  for(let o=fo-1;o<=fo+3;o++){const d=Math.abs(midi(tL,'',o)-tm);if(d<bD){bD=d;bO=o;}}
+  // Accidental
+  const nm=midi(tL,'',bO), df=tm-nm;
+  let tA='';
+  if(df===-2)tA='bb';else if(df===-1)tA='b';else if(df===1)tA='#';else if(df===2)tA='##';
+  // For partials 9-16, determine letter/acc from nearest natural spelling
+  if(pn>8){
+    // Just pick the simplest enharmonic spelling
+    const nIO=tm%12;
+    const sharpNames=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const flatNames =['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+    const sn=sharpNames[nIO]; const fnm=flatNames[nIO];
+    // Prefer sharps
+    const useName=sn;
+    const uL=useName[0], uA=useName.length>1?(useName[1]==='#'?'#':'b'):'';
+    const uO=Math.floor(tm/12)-1;
+    return{lt:uL,oc:uO,ac:uA,mi:tm,hz,ct,pn,iN:'',hs:0,fp:null,fmi:fM,
+      flt:fL,foc:fO,fac:fA,desc:'',goff:0};
+  }
+  return{lt:tL,oc:bO,ac:tA,mi:tm,hz,ct,pn,iN,hs,fp,fmi:fm,
+    flt:fl,foc:fo,fac:fa,desc,goff:off};
+}
+
+/* ─── Audio ──────────────────────────────────────── */
+async function startAudio(){
+  try{await Tone.start();
+    syn=new Tone.Synth({oscillator:{type:'sine'},
+      envelope:{attack:.015,decay:.1,sustain:.5,release:.25}}).toDestination();
+    aOk=true;}catch(e){console.warn(e)}
+  $('overlay').classList.add('off');boot();
+}
+function pl(hz,d=.5){if(!aOk||!syn)return;try{syn.triggerAttackRelease(hz,d)}catch(e){}}
+function plM(m,d=.3){pl(mhz(m),d)}
+function pFund(){pl(mhz(G.fM),.8)}
+function pSer(){if(!aOk)return;const fh=mhz(G.fM);const ps=G.dn.map(d=>d.pn).sort((a,b)=>a-b);
+  let t=Tone.now();for(const p of ps){syn.triggerAttackRelease(phz(fh,p),.38,t);t+=.42;}}
+
+/* ─── Toast ──────────────────────────────────────── */
+function toast(m,ms=3000){const t=$('toast');t.textContent=m;t.classList.add('v');
+  setTimeout(()=>t.classList.remove('v'),ms)}
+
+/* ─── Mode / Reminders ───────────────────────────── */
+function setMode(m){
+  mode=m;$('pTut').classList.toggle('on',m==='tut');$('pPrac').classList.toggle('on',m==='prac');
+  $('pcl').classList.toggle('v',m==='prac');
+  rem=m==='tut';updRem();
+  if(m==='tut')go('B',2,'');
+}
+function togRem(){rem=!rem;updRem()}
+function updRem(){$('pRem').textContent='Reminders: '+(rem?'ON':'OFF');
+  $('pRem').classList.toggle('on',rem);$('hsCh').style.display=rem?'inline-block':'none'}
+
+/* ─── Keyboard ───────────────────────────────────── */
+const KL=24,KH=96; let ks={};
+function bldKB(){const c=$('kb');c.innerHTML='';ks={};
+  for(let m=KL;m<=KH;m++){const n=m%12,o=Math.floor(m/12)-1;
+    const bk=[1,3,6,8,10].includes(n);const k=document.createElement('div');
+    k.className='k '+(bk?'kk':'kw');k.dataset.m=m;
+    if(n===0){const lb=document.createElement('span');lb.className='klb';lb.textContent='C'+o;k.appendChild(lb)}
+    k.addEventListener('click',()=>{plM(m);k.classList.add('pr');setTimeout(()=>k.classList.remove('pr'),120)});
+    c.appendChild(k);ks[m]=k}}
+function hlK(m,cls='hl'){clHL();if(ks[m]){ks[m].classList.add(cls);scK(m)}}
+function clHL(){Object.values(ks).forEach(k=>{k.classList.remove('hl','st');
+  k.querySelectorAll('.cbd').forEach(b=>b.remove())})}
+function scK(m){const k=ks[m];if(!k)return;const w=$('kbw');
+  const kr=k.getBoundingClientRect(),wr=w.getBoundingClientRect();
+  if(kr.left<wr.left||kr.right>wr.right)
+    w.scrollTo({left:k.offsetLeft-w.clientWidth/2+k.clientWidth/2,behavior:'smooth'})}
+
+/* ─── Self-test accidentals ──────────────────────── */
+function selfTest(){
+  const d=document.createElement('div');
+  d.style.cssText='position:absolute;left:-9999px;top:-9999px;width:400px;height:200px';
+  document.body.appendChild(d);
+  for(const a of ['bb','b','','#','##']){try{
+    d.innerHTML='';
+    const r=new VF.Renderer(d,VF.Renderer.Backends.SVG);r.resize(300,150);const c=r.getContext();
+    const st=new VF.Stave(10,10,250).addClef('treble').setContext(c).draw();
+    const n=new VF.StaveNote({keys:['c/4'],duration:'q'});
+    if(a)n.addModifier(new VF.Accidental(a),0);
+    const v=new VF.Voice({num_beats:1,beat_value:4});v.addTickable(n);
+    new VF.Formatter().joinVoices([v]).format([v],200);v.draw(c,st);
+  }catch(e){AOK[a]=false;console.warn('Acc unavail:',a)}}
+  document.body.removeChild(d);
+  let bad=false;
+  document.querySelectorAll('#aCtl [data-a]').forEach(b=>{
+    if(!AOK[b.dataset.a]){b.disabled=true;b.title='Unavailable';bad=true}});
+  if(bad)toast('Some accidentals unavailable in this build.');
+}
+
+/* ─── Init state ─────────────────────────────────── */
+function initG(fL,fO,fA){
+  G={fL,fO,fA:fA||'',fM:midi(fL,fA||'',fO),ix:0,ph:'n',dn:[],
+    pos:{l:fL,o:fO},acc:fA||'',hc:0,fin:false};
+  tgt=null;clFB();
+  $('doneM').classList.remove('v');$('cA').innerHTML='';
+  $('pList').innerHTML='';$('advD').innerHTML='';$('advD').classList.remove('v');
+}
+
+/* ─── Start ──────────────────────────────────────── */
+function go(l,o,a){initG(l,o,a);setup()}
+function goPrac(){const v=$('fsel').value;const[n,o]=v.split('|');
+  let l=n[0],a=n.length>1?(n[1]==='#'?'#':'b'):'';initG(l,parseInt(o),a);setup()}
+function rndFund(){const s=$('fsel'),opts=s.options;
+  const good=[];for(let i=0;i<opts.length;i++){const o=opts[i].value.split('|')[1];
+    if(o==='2'||o==='3')good.push(i)}
+  const pool=Math.random()<.8?good:[...Array(opts.length).keys()];
+  s.selectedIndex=pool[Math.floor(Math.random()*pool.length)]}
+
+/* ─── Setup current partial ──────────────────────── */
+function setup(){
+  if(G.ix>=ORD.length)return;
+  const pn=ORD[G.ix];
+  tgt=calcTgt(G.fL,G.fO,G.fA,pn);
+  G.ph='n';G.acc='';G.hc=0;
+  // Start position at "from" note
+  if(tgt.fp){const fr=G.dn.find(d=>d.pn===tgt.fp);
+    if(fr)G.pos={l:fr.lt,o:fr.oc};else G.pos={l:G.fL,o:G.fO}}
+  else G.pos={l:G.fL,o:G.fO};
+  clFB();showCtl();showTask();render();
+}
+
+/* ─── Task text ──────────────────────────────────── */
+function showTask(){
+  if(!tgt)return;const pn=tgt.pn,o=ord(pn);
+  if(G.ph==='n'){
+    $('tL').textContent=o+' PARTIAL — Step A';
+    if(pn===1){$('tT').innerHTML=`Place the fundamental <span class="nn">${fmt(G.fL,G.fA)}${G.fO}</span> on the staff. Put the note on the right line or space.`}
+    else{const fr=G.dn.find(d=>d.pn===tgt.fp);
+      const fn=fr?`<span class="nn">${fmt(fr.lt,fr.ac)}${fr.oc}</span>`:'';
+      const iD=tgt.hs===12?'an <span class="hi">octave</span>'
+        :`a <span class="hi">generic ${tgt.iN.split(' ')[1]}</span>`;
+      $('tT').innerHTML=`<strong>${o} partial:</strong> ${tgt.desc.split('(')[0].trim()}.<br>Count ${iD} above the ${ord(tgt.fp)} partial ${fn}. Put the note on the right line or space.`}
+  }else{
+    $('tL').textContent=o+' PARTIAL — Step B';
+    const hsT=tgt.hs>0&&tgt.hs!==12?` (${tgt.hs} half steps)`:'';
+    $('tT').innerHTML=`Add the accidental if needed${hsT}. Use the half-step check on the keyboard!`;
+    if(tgt.ct!==0)$('cA').innerHTML=`<span class="cbg">${tgt.ct>0?'+':''}${tgt.ct}¢ from equal temperament</span>`;
+  }
+}
+
+/* ─── Control visibility ─────────────────────────── */
+function showCtl(){
+  if(G.fin){$('nCtl').style.display='none';$('aCtl').style.display='none';$('hsp').classList.remove('v');return}
+  if(G.ph==='n'){$('nCtl').style.display='flex';$('aCtl').style.display='none';$('hsp').classList.remove('v');
+    $('bUp').disabled=false;$('bDn').disabled=false;$('bOk').disabled=false;$('cA').innerHTML=''}
+  else{$('nCtl').style.display='none';$('aCtl').style.display='flex';
+    document.querySelectorAll('#aCtl [data-a]').forEach(b=>b.classList.remove('s'));
+    $('bAOk').disabled=true}
+}
+
+/* ─── Move note ──────────────────────────────────── */
+function mv(d){const ci=pI(G.pos.l,G.pos.o),ni=ci+d;
+  if(ni<0||ni>=POS.length)return;G.pos={l:POS[ni].l,o:POS[ni].o};G.acc='';
+  render();plM(midi(G.pos.l,'',G.pos.o))}
+
+/* ─── Pick accidental ────────────────────────────── */
+function pAcc(a){G.acc=a;
+  document.querySelectorAll('#aCtl [data-a]').forEach(b=>b.classList.toggle('s',b.dataset.a===a));
+  $('bAOk').disabled=false;render();plM(midi(G.pos.l,a,G.pos.o))}
+
+/* ─── Confirm position ───────────────────────────── */
+function okPos(){if(!tgt)return;
+  const{l,o}=G.pos;
+  if(l===tgt.lt&&o===tgt.oc){
+    fb('ok','✓ Correct staff position! Now add the accidental if needed.');
+    G.ph='a';showCtl();showTask();
+    if(tgt.pn!==1&&tgt.hs!==12&&tgt.hs!==0)showHS();
+    render();
+  }else if(l===tgt.lt&&o!==tgt.oc){
+    fb('wr',`Correct note name, wrong octave—move it ${o<tgt.oc?'up':'down'} one octave.`);
+  }else{
+    if(rem&&tgt.fp){const gn=tgt.iN==='Octave'?'an octave':'a generic '+tgt.iN.split(' ')[1];
+      fb('er',`Not quite. Count ${gn} from the ${ord(tgt.fp)} partial. Remember: include the starting note as 1.`)}
+    else fb('er','Not the right staff position. Try again!');
+  }
+}
+
+/* ─── Confirm accidental ─────────────────────────── */
+function okAcc(){if(!tgt)return;
+  const sm=midi(G.pos.l,G.acc,G.pos.o);
+  if(G.acc===tgt.ac){complete()}
+  else if(sm===tgt.mi){
+    const gw=tgt.goff===4?'5th':tgt.goff===2?'3rd':'interval';
+    fb('wr',`Enharmonic warning: right pitch, wrong spelling. The generic interval must be a ${gw}, so the letter name must be ${tgt.lt}. Fix the accidental.`)}
+  else{if(rem&&tgt.hs>0&&tgt.hs!==12)
+    fb('er',`Not quite. Use the half-step check: count ${tgt.hs} half steps from the ${ord(tgt.fp)} partial.`);
+    else fb('er','Wrong accidental. Try again!')}
+}
+
+/* ─── Complete partial ───────────────────────────── */
+function complete(){
+  const t=tgt,fh=mhz(G.fM),hz=phz(fh,t.pn);
+  G.dn.push({pn:t.pn,lt:t.lt,oc:t.oc,ac:t.ac,mi:t.mi,hz,ct:t.ct});
+  fb('ok',`✓ ${ord(t.pn)} partial correct! ${fmt(t.lt,t.ac)}${t.oc} — ${hz.toFixed(2)} Hz`);
+  pl(hz,.6);
+  if(mode==='prac'){strk++;$('stk').textContent='Streak: '+strk}
+  updChips();G.ix++;
+  if(G.ix>=ORD.length){G.fin=true;finish()}
+  else setTimeout(setup,1400);
+  render();
+}
+
+function finish(){showCtl();$('doneM').classList.add('v');
+  $('tL').textContent='COMPLETE';
+  $('tT').innerHTML='All 8 partials placed! Partials 9–16 shown on the staff.';render()}
+
+/* ─── Half-step panel ────────────────────────────── */
+function showHS(){$('hsp').classList.add('v');G.hc=0;
+  const fr=G.dn.find(d=>d.pn===tgt.fp);
+  const fn=fr?fmt(fr.lt,fr.ac)+fr.oc:'?';
+  $('hsI').innerHTML=`Count <strong>${tgt.hs}</strong> half steps from <span class="nn">${fn}</span> (${tgt.iN}). Start key = 0, next key = 1.`
+    +(tgt.pn===7?'<br><em style="color:var(--tx3)">Double-check: count 2 half steps left from the 8th partial.</em>':'');
+  $('hsC').textContent='Count: 0';
+  $('hsP').style.display=tgt.pn===7?'inline-block':'none';
+  if(fr){clHL();if(ks[fr.mi]){ks[fr.mi].classList.add('st');scK(fr.mi)}}}
+
+function hsS(dir){G.hc++;$('hsC').textContent='Count: '+G.hc;
+  const fr=G.dn.find(d=>d.pn===tgt.fp);if(!fr)return;
+  let sm;if(dir===-1&&tgt.pn===7){const p8=G.dn.find(d=>d.pn===8);sm=p8?p8.mi:fr.mi}
+  else sm=fr.mi;
+  const cm=sm+(G.hc*dir);clHL();if(ks[sm])ks[sm].classList.add('st');
+  if(rem)for(let i=1;i<=G.hc;i++){const m=sm+(i*dir);if(ks[m]){
+    const b=document.createElement('div');b.className='cbd';b.textContent=i;ks[m].appendChild(b)}}
+  if(ks[cm]){ks[cm].classList.add('hl');scK(cm)}plM(cm)}
+
+function hsR(){G.hc=0;$('hsC').textContent='Count: 0';
+  const fr=G.dn.find(d=>d.pn===tgt.fp);clHL();
+  if(fr&&ks[fr.mi]){ks[fr.mi].classList.add('st');scK(fr.mi)}}
+
+/* ─── Feedback ───────────────────────────────────── */
+function fb(t,m){const e=$('fb');e.className='fb v '+t;e.innerHTML=m}
+function clFB(){$('fb').className='fb';$('fb').innerHTML=''}
+
+/* ─── Chips (completed list) ─────────────────────── */
+function updChips(){
+  const ls=$('pList');ls.innerHTML='';
+  const s=[...G.dn].sort((a,b)=>a.pn-b.pn);
+  for(const p of s){const c=document.createElement('div');c.className='chip';
+    c.innerHTML=`${ord(p.pn)}: ${fmt(p.lt,p.ac)}${p.oc}<span class="hz">${p.hz.toFixed(1)}Hz</span>`;
+    ls.appendChild(c)}
+  $('advD').innerHTML=s.map(p=>`${ord(p.pn)}: ratio ${RAT[p.pn]||'?'}, ${p.ct!==0?(p.ct>0?'+':'')+p.ct+'¢':'0¢'}`).join('<br>')}
+
+/* ─── Progress bar ───────────────────────────────── */
+function updPB(){const b=$('pbar');b.innerHTML='';
+  for(let i=0;i<8;i++){const p=document.createElement('div');p.className='pip';
+    if(i<G.ix)p.classList.add('d');else if(i===G.ix&&!G.fin)p.classList.add('c');
+    else if(G.fin)p.classList.add('d');b.appendChild(p)}}
+
+/* ─── VexFlow Notation ───────────────────────────── */
+function renderStaff(){
+  const box=$('staffBox');box.innerHTML='';
+  try{
+    const W=Math.min(box.clientWidth-8,680),H=270;
+    const rr=new VF.Renderer(box,VF.Renderer.Backends.SVG);rr.resize(W,H);
+    const ctx=rr.getContext();const sw=W-50;
+    // Draw staves
+    const ts=new VF.Stave(25,20,sw).addClef('treble');ts.setContext(ctx).draw();
+    const bs=new VF.Stave(25,140,sw).addClef('bass');bs.setContext(ctx).draw();
+    // Collect notes
+    const tN=[],bN=[];
+    // Completed
+    const sorted=[...G.dn].sort((a,b)=>a.pn-b.pn);
+    for(const p of sorted)addN(p.lt,p.oc,p.ac,tN,bN,'#333',false);
+    // Current
+    if(!G.fin&&tgt)addN(G.pos.l,G.pos.o,G.acc,tN,bN,'#2266dd',false);
+    // Bonus 9-16
+    if(G.fin)for(let pn=9;pn<=16;pn++){try{
+      const t=calcTgt(G.fL,G.fO,G.fA,pn);addN(t.lt,t.oc,t.ac,tN,bN,'#999',true)}catch(e){}}
+    // Render voices
+    drV(ctx,ts,tN,sw);drV(ctx,bs,bN,sw);
+  }catch(e){console.error('Staff error',e);
+    box.innerHTML='<p style="color:#888;padding:16px;text-align:center">Notation error</p>'}
+}
+
+function addN(lt,oc,ac,tN,bN,col,bonus){
+  const mi=midi(lt,ac,oc);
+  const vk=lt.toLowerCase()+'/'+oc;
+  const c4=60,g3=55,f4=65;
+  const isOv=mi>=g3&&mi<=f4;
+  const home=mi>=c4?'treble':'bass';
+  function mk(cl,gh){try{
+    const n=new VF.StaveNote({keys:[vk],duration:bonus?'w':'q',clef:cl,
+      stem_direction:cl==='treble'?1:-1});
+    if(ac&&AOK[ac])n.addModifier(new VF.Accidental(ac),0);
+    const c=gh?'#aaa':col;n.setStyle({fillStyle:c,strokeStyle:c});
+    return n}catch(e){return null}}
+  if(isOv){
+    const mn=mk(home,false),gn=mk(home==='treble'?'bass':'treble',true);
+    if(mn){if(home==='treble')tN.push(mn);else bN.push(mn)}
+    if(gn){if(home==='treble')bN.push(gn);else tN.push(gn)}
+  }else if(home==='treble'){const n=mk('treble',false);if(n)tN.push(n)}
+  else{const n=mk('bass',false);if(n)bN.push(n)}
+}
+
+function drV(ctx,stave,notes,sw){
+  if(!notes.length)return;
+  try{
+    // Group by duration to avoid voice issues
+    const qs=notes.filter(n=>n.getDuration()==='q');
+    const ws=notes.filter(n=>n.getDuration()==='w');
+    if(qs.length){
+      const v=new VF.Voice({num_beats:qs.length,beat_value:4}).setStrict(false);
+      qs.forEach(n=>v.addTickable(n));
+      new VF.Formatter().joinVoices([v]).format([v],sw-80);v.draw(ctx,stave)}
+    if(ws.length){
+      const v=new VF.Voice({num_beats:ws.length*4,beat_value:4}).setStrict(false);
+      ws.forEach(n=>v.addTickable(n));
+      new VF.Formatter().joinVoices([v]).format([v],sw-80);v.draw(ctx,stave)}
+  }catch(e){
+    // Fallback: one note at a time
+    for(const n of notes){try{
+      const v=new VF.Voice({num_beats:4,beat_value:4}).setStrict(false);
+      v.addTickable(n);new VF.Formatter().joinVoices([v]).format([v],sw-80);
+      v.draw(ctx,stave)}catch(e2){}}
+  }
+}
+
+/* ─── Main render ────────────────────────────────── */
+function render(){
+  renderStaff();
+  if(G.ph==='n'&&!G.fin){const m=midi(G.pos.l,G.acc||'',G.pos.o);hlK(m)}
+  updPB();
+}
+
+/* ─── Populate fundamental selector ──────────────── */
+function popSel(){const s=$('fsel');s.innerHTML='';
+  const ns=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  for(let o=1;o<=4;o++)for(const n of ns){
+    if(o===1&&ns.indexOf(n)<ns.indexOf('F'))continue;
+    if(o===4&&ns.indexOf(n)>ns.indexOf('F'))continue;
+    const op=document.createElement('option');op.value=n+'|'+o;op.textContent=n+o;s.appendChild(op)}}
+
+/* ─── Boot ───────────────────────────────────────── */
+function boot(){bldKB();selfTest();popSel();updRem();go('B',2,'')}
+
+let rT;window.addEventListener('resize',()=>{clearTimeout(rT);rT=setTimeout(render,200)});
+</script>
+</body>
+</html>

@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Harmonic Series: Staff + Keyboard Builder</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@3.0.9/releases/vexflow-min.js"></script>
+    <script src="https://unpkg.com/tone"></script>
+
+    <style>
+        /* Mobile-First CSS Variables & Reset */
+        :root {
+            --bg-color: #f4f4f6;
+            --panel-bg: #ffffff;
+            --text-main: #111111;
+            --text-muted: #666666;
+            --accent: #ffbb00; /* Ableton-esque yellow */
+            --accent-hover: #e6a800;
+            --error: #ff4d4d;
+            --success: #00cc66;
+            --border: #e0e0e0;
+            --btn-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        /* Layout */
+        #app {
+            width: 100%;
+            max-width: 500px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        /* Notation */
+        #notation-panel {
+            width: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            background: #fafafa;
+            border-bottom: 1px solid var(--border);
+            padding: 10px 0;
+        }
+
+        /* Badges & Info */
+        #info-area {
+            padding: 10px 15px;
+            text-align: center;
+            font-size: 0.9rem;
+            min-height: 40px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #eee;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin: 2px;
+        }
+
+        /* Controls */
+        #controls {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            appearance: none;
+            border: 1px solid var(--border);
+            background: var(--panel-bg);
+            padding: 10px 16px;
+            border-radius: var(--btn-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.1s;
+            color: var(--text-main);
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        button.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        button.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        button.active {
+            background: #333;
+            color: #fff;
+            border-color: #333;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        /* Keyboard Tool */
+        #keyboard-container {
+            width: 100%;
+            padding: 15px 0;
+            background: #222;
+            border-top: 1px solid #000;
+            display: none; /* toggled via JS */
+        }
+
+        #keyboard-scroll {
+            width: 100%;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            padding: 0 20px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        #piano {
+            position: relative;
+            height: 120px;
+            white-space: nowrap;
+        }
+
+        .key {
+            display: inline-block;
+            position: absolute;
+            box-sizing: border-box;
+            cursor: pointer;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .key.white {
+            width: 40px;
+            height: 120px;
+            background: #fff;
+            border: 1px solid #ccc;
+            z-index: 1;
+        }
+
+        .key.black {
+            width: 24px;
+            height: 80px;
+            background: #111;
+            z-index: 2;
+        }
+
+        .c-marker {
+            position: absolute;
+            bottom: 5px;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            color: #999;
+        }
+
+        .key.highlight-start { background: #ff4d4d !important; }
+        .key.highlight-count { background: var(--accent) !important; color: #000; }
+        .key.highlight-target { background: var(--success) !important; color: #fff; }
+        
+        .key-label {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 3;
+            pointer-events: none;
+        }
+        .key.black .key-label { color: #fff; bottom: 10px; }
+
+        /* Feedback & Narrative */
+        #feedback {
+            padding: 10px 15px;
+            margin: 0 15px 15px 15px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+        #feedback.show { display: block; }
+        .feedback-error { background: #ffe6e6; color: #cc0000; }
+        .feedback-success { background: #e6ffe6; color: #008000; }
+        .feedback-warning { background: #fff0cc; color: #b38000; }
+
+        .narrative-box {
+            background: #f0f4f8;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 0 15px 10px 15px;
+            font-size: 0.9rem;
+            border-left: 4px solid #3388ff;
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            visibility: hidden;
+            opacity: 0;
+            transition: 0.2s;
+        }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 90%;
+            width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-content h2 { margin-bottom: 10px; font-size: 1.2rem; }
+        .modal-content p { margin-bottom: 15px; line-height: 1.4; font-size: 0.95rem; }
+        .modal-content a { color: #3388ff; font-weight: bold; text-decoration: none; }
+        
+        .hidden { display: none !important; }
+        
+        /* Utility */
+        .flex-between { display: flex; justify-content: space-between; align-items: center; }
+        .text-small { font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <header>
+        <div class="flex-between">
+            <h1>Harmonic Builder</h1>
+            <button id="btn-intro" class="text-small">Why it matters</button>
+        </div>
+        <div class="progress-bar" id="progress-text">Loading...</div>
+        <div class="control-row" style="margin-top:5px; gap:5px;">
+            <button id="btn-play-f0" class="text-small">Play Root</button>
+            <button id="btn-play-series" class="text-small">Play Series</button>
+            <button id="btn-help" class="text-small">Help</button>
+        </div>
+    </header>
+
+    <div class="narrative-box" id="narrative-text"></div>
+
+    <div id="notation-panel"></div>
+    
+    <div id="info-area">
+        <span id="badge-ratio" class="badge hidden"></span>
+        <span id="badge-cents" class="badge hidden"></span>
+    </div>
+
+    <div id="feedback"></div>
+
+    <div id="controls">
+        <div id="phase-a-controls" class="control-row">
+            <button id="btn-down">⬇️ Staff Down</button>
+            <button id="btn-up">⬆️ Staff Up</button>
+        </div>
+
+        <div id="phase-b-controls" class="control-row hidden">
+            <button class="btn-acc" data-acc="bb">bb</button>
+            <button class="btn-acc" data-acc="b">b</button>
+            <button class="btn-acc" data-acc="nat">♮</button>
+            <button class="btn-acc" data-acc="#">#</button>
+            <button class="btn-acc" data-acc="##">##</button>
+            <button id="btn-halfstep" style="width:100%; margin-top:10px; background:#e0e0e0;">🎹 Half-step Check</button>
+        </div>
+
+        <button id="btn-submit" class="primary">Submit Answer</button>
+    </div>
+
+    <div id="keyboard-container">
+        <div id="keyboard-scroll">
+            <div id="piano"></div>
+        </div>
+    </div>
+</div>
+
+<div id="modal-intro" class="modal-overlay">
+    <div class="modal-content">
+        <h2>Why it matters</h2>
+        <p>The harmonic series is the fundamental basis of sound color (timbre) and harmony. Every note you hear on a piano or guitar actually contains a hidden ladder of higher frequencies called "partials."</p>
+        <p></p>
+        <p>By learning how to spell these partials, you connect the physics of sound directly to music theory!</p>
+        <button onclick="closeModals()" class="primary" style="width:100%">Got it</button>
+    </div>
+</div>
+
+<div id="modal-help" class="modal-overlay">
+    <div class="modal-content">
+        <h2>Step Help</h2>
+        <p id="help-text"></p>
+        <p></p>
+        <p><a id="help-link" href="#" target="_blank">📖 Read more on musictheory.net</a></p>
+        <button onclick="closeModals()" class="primary" style="width:100%; margin-top:10px;">Close</button>
+    </div>
+</div>
+
+<div id="modal-end" class="modal-overlay">
+    <div class="modal-content">
+        <h2>Tutorial Complete!</h2>
+        <p>You've built the harmonic series up to the 8th partial.</p>
+        <div class="control-row">
+            <button onclick="startNextTutorial()" class="primary">Next Fundamental</button>
+            <button onclick="startPracticeMode()">Practice Mode</button>
+            <button onclick="startBonusMode()">Bonus (9-12)</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* ================= MUSIC MATH & STATE ================= */
+    
+    const TUTORIALS = [
+        { name: "B", midi: 47 },  // B2
+        { name: "Eb", midi: 39 }, // Eb2
+        { name: "C", midi: 36 },  // C2
+        { name: "Db", midi: 37 }  // Db2
+    ];
+
+    const NARRATIVE = {
+        1: { title: "1st Partial (Fundamental)", help: "/10", desc: "Place the fundamental note on the staff. Use Up/Down to move the note." },
+        2: { title: "2nd Partial (Octave)", help: "/10", desc: "Build an octave above the fundamental. Staff counting includes the first note (count 1 to 8 lines/spaces)." },
+        3: { title: "3rd Partial (Perfect Fifth)", help: "/30", desc: "Build a Perfect Fifth above the 2nd partial. Generic first (count 5 steps), then check half-steps." },
+        4: { title: "4th Partial (Perfect Fourth)", help: "/30", desc: "Build a Perfect Fourth above the 3rd partial. This completes the second octave." },
+        5: { title: "5th Partial (Major Third)", help: "/31", desc: "Build a Major Third above the 4th partial." },
+        6: { title: "6th Partial (Minor Third)", help: "/31", desc: "Build a Minor Third above the 5th partial. Double-check: this matches the 3rd partial's letter name!" },
+        7: { title: "7th Partial (Harmonic 7th)", help: "/32", desc: "Stack another Minor Third. Notice this is noticeably flat! Double-check: generic letter is one step below the octave." },
+        8: { title: "8th Partial (Octave)", help: "/32", desc: "Build a Major Second above the 7th partial to reach the 8th partial. Three octaves above the root!" }
+    };
+
+    const RELATIVE_GENERICS = [0, 7, 4, 3, 2, 2, 2, 1, 1, 1, 1, 1]; // Intervals between successive partials
+
+    let state = {
+        mode: 'tutorial', // 'tutorial', 'practice', 'bonus'
+        tutIndex: 0,
+        currentPartial: 1,
+        maxPartial: 8,
+        phase: 'A', // A = generic, B = specific
+        expectedPartials: [], // Math truth
+        userGenerics: [],     // User's staff positions
+        userAccidentals: [],  // User's accidentals
+        currentGeneric: 20,
+        currentAccidental: ''
+    };
+
+    /* ================= AUDIO ENGINE (Tone.js) ================= */
+    let synthAudio, harmonicOscillators = [];
+    let audioInitialized = false;
+
+    async function initAudio() {
+        if (!audioInitialized) {
+            await Tone.start();
+            synthAudio = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" } }).toDestination();
+            synthAudio.volume.value = -12;
+            audioInitialized = true;
+        }
+    }
+
+    function playClick(midiNote) {
+        if (!audioInitialized || !synthAudio) return;
+        const freq = Tone.Frequency(midiNote, "midi").toFrequency();
+        synthAudio.triggerAttackRelease(freq, "8n");
+    }
+
+    function playHarmonics(f0, maxN) {
+        if (!audioInitialized) return;
+        const now = Tone.now();
+        for (let n = 1; n <= maxN; n++) {
+            const osc = new Tone.Oscillator(f0 * n, "sine").toDestination();
+            osc.volume.value = -12 - (8 * Math.log10(n));
+            osc.start(now).stop(now + 1.5);
+        }
+    }
+
+    /* ================= CORE LOGIC ================= */
+
+    function getGenericIndexFromMidi(midi) {
+        const offsets = [0, 1, 1, 2, 2, 3, 4, 4, 5, 5, 6, 6];
+        const octave = Math.floor(midi / 12) - 1;
+        return octave * 7 + offsets[midi % 12];
+    }
+
+    function genericIndexToLetter(index) {
+        const letters = ['c', 'd', 'e', 'f', 'g', 'a', 'b'];
+        const letter = letters[((index % 7) + 7) % 7];
+        const octave = Math.floor(index / 7);
+        return { letter, octave };
+    }
+
+    function getMidiFromGeneric(index, acc) {
+        const baseMidis = [0, 2, 4, 5, 7, 9, 11]; // C D E F G A B
+        const letterIdx = ((index % 7) + 7) % 7;
+        const octave = Math.floor(index / 7);
+        let midi = (octave + 1) * 12 + baseMidis[letterIdx];
+        if (acc === '#') midi += 1;
+        if (acc === '##') midi += 2;
+        if (acc === 'b') midi -= 1;
+        if (acc === 'bb') midi -= 2;
+        return midi;
+    }
+
+    function computeHarmonicSeries(baseMidi, maxN) {
+        const f0 = 440 * Math.pow(2, (baseMidi - 69) / 12);
+        const baseGeneric = getGenericIndexFromMidi(baseMidi);
+        let partials = [null]; // 1-indexed
+        let currentGen = baseGeneric;
+
+        for (let n = 1; n <= maxN; n++) {
+            if (n > 1) currentGen += RELATIVE_GENERICS[n-1];
+            const fn = f0 * n;
+            const halfSteps = Math.round(12 * Math.log2(fn / 440));
+            const midiNote = 69 + halfSteps;
+            const tetFreq = 440 * Math.pow(2, halfSteps / 12);
+            const cents = Math.round(1200 * Math.log2(fn / tetFreq));
+            
+            partials.push({ n, freq: fn, midi: midiNote, cents, genericIndex: currentGen });
+        }
+        return partials;
+    }
+
+    /* ================= UI & RENDERING ================= */
+
+    function showFeedback(msg, type) {
+        const fb = document.getElementById("feedback");
+        fb.innerText = msg;
+        fb.className = "show feedback-" + type;
+    }
+    function hideFeedback() {
+        document.getElementById("feedback").className = "";
+    }
+
+    function updateBadges() {
+        if (state.phase === 'B' || state.currentPartial > 1) {
+            const tgt = state.expectedPartials[state.currentPartial];
+            if(tgt) {
+                const ratioBadge = document.getElementById("badge-ratio");
+                ratioBadge.innerText = `Ratio ${tgt.n}:1`;
+                ratioBadge.classList.remove("hidden");
+                
+                const centsBadge = document.getElementById("badge-cents");
+                const sign = tgt.cents >= 0 ? '+' : '';
+                centsBadge.innerText = `Cents offset: ${sign}${tgt.cents}¢`;
+                centsBadge.classList.remove("hidden");
+                centsBadge.style.color = Math.abs(tgt.cents) > 15 ? "#cc0000" : "#008000";
+                return;
+            }
+        }
+        document.getElementById("badge-ratio").classList.add("hidden");
+        document.getElementById("badge-cents").classList.add("hidden");
+    }
+
+    function renderNotation() {
+        const div = document.getElementById("notation-panel");
+        div.innerHTML = "";
+        const renderer = new Vex.Flow.Renderer(div, Vex.Flow.Renderer.Backends.SVG);
+        renderer.resize(340, 220);
+        const ctx = renderer.getContext();
+        ctx.setViewBox(0, 0, 340, 220);
+
+        const staveTreble = new Vex.Flow.Stave(10, 20, 320).addClef("treble").setContext(ctx).draw();
+        const staveBass = new Vex.Flow.Stave(10, 100, 320).addClef("bass").setContext(ctx).draw();
+        new Vex.Flow.StaveConnector(staveTreble, staveBass).setType(3).setContext(ctx).draw();
+        new Vex.Flow.StaveConnector(staveTreble, staveBass).setType(1).setContext(ctx).draw();
+
+        const trebleNotes = [];
+        const bassNotes = [];
+
+        for (let i = 1; i <= state.currentPartial; i++) {
+            const generic = (i === state.currentPartial) ? state.currentGeneric : state.userGenerics[i];
+            const acc = (i === state.currentPartial) ? state.currentAccidental : state.userAccidentals[i];
+            
+            const isTreble = generic >= 28; // Middle C or above
+            const { letter, octave } = genericIndexToLetter(generic);
+            const vAcc = acc === 'nat' ? 'n' : (acc || '');
+            const keyStr = `${letter}${vAcc}/${octave}`;
+
+            let tNote, bNote;
+            if (isTreble) {
+                tNote = new Vex.Flow.StaveNote({ keys: [keyStr], duration: "q", clef: "treble" });
+                if (vAcc) tNote.addModifier(new Vex.Flow.Accidental(vAcc));
+                bNote = new Vex.Flow.GhostNote({ duration: "q", clef: "bass", keys: ["c/3"] });
+            } else {
+                bNote = new Vex.Flow.StaveNote({ keys: [keyStr], duration: "q", clef: "bass" });
+                if (vAcc) bNote.addModifier(new Vex.Flow.Accidental(vAcc));
+                tNote = new Vex.Flow.GhostNote({ duration: "q", clef: "treble", keys: ["c/4"] });
+            }
+
+            if (i === state.currentPartial) {
+                tNote.setStyle({fillStyle: "#ffbb00", strokeStyle: "#ffbb00"});
+                bNote.setStyle({fillStyle: "#ffbb00", strokeStyle: "#ffbb00"});
+            }
+
+            trebleNotes.push(tNote);
+            bassNotes.push(bNote);
+        }
+
+        const vt = new Vex.Flow.Voice({num_beats: state.currentPartial, beat_value: 4}).addTickables(trebleNotes);
+        const vb = new Vex.Flow.Voice({num_beats: state.currentPartial, beat_value: 4}).addTickables(bassNotes);
+        new Vex.Flow.Formatter().joinVoices([vt, vb]).format([vt, vb], 280);
+        
+        vt.draw(ctx, staveTreble);
+        vb.draw(ctx, staveBass);
+    }
+
+    /* ================= KEYBOARD TOOL ================= */
+
+    function buildPiano() {
+        const piano = document.getElementById("piano");
+        piano.innerHTML = "";
+        const pattern = [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1];
+        let whiteCount = 0;
+        for (let i = 36; i <= 84; i++) { // C2 to C6
+            const isWhite = pattern[i % 12] === 1;
+            const key = document.createElement("div");
+            key.id = "key-" + i;
+            key.className = "key " + (isWhite ? "white" : "black");
+            
+            if (isWhite) {
+                key.style.left = (whiteCount * 40) + "px";
+                if (i % 12 === 0) {
+                    const mk = document.createElement("span");
+                    mk.className = "c-marker";
+                    mk.innerText = "C" + ((i/12)-1);
+                    key.appendChild(mk);
+                }
+                whiteCount++;
+            } else {
+                key.style.left = (whiteCount * 40 - 12) + "px";
+            }
+            key.onclick = () => { initAudio(); playClick(i); };
+            piano.appendChild(key);
+        }
+        piano.style.width = (whiteCount * 40) + "px";
+    }
+
+    function animateHalfStepCheck() {
+        document.getElementById("keyboard-container").style.display = "block";
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(k => { k.className = k.className.replace(/highlight-start|highlight-count|highlight-target/g, ''); k.innerHTML = k.querySelector('.c-marker') ? k.querySelector('.c-marker').outerHTML : ''; });
+
+        const prevMidi = state.currentPartial === 1 ? state.expectedPartials[1].midi : state.expectedPartials[state.currentPartial - 1].midi;
+        const targetMidi = state.expectedPartials[state.currentPartial].midi;
+
+        const kScroll = document.getElementById("keyboard-scroll");
+        const startKey = document.getElementById("key-" + prevMidi);
+        if (startKey) kScroll.scrollLeft = startKey.offsetLeft - 40;
+
+        if (state.currentPartial === 1) return; // No counting for root
+
+        setTimeout(() => {
+            if(startKey) {
+                startKey.classList.add("highlight-start");
+                startKey.innerHTML += `<span class="key-label">0</span>`;
+            }
+        }, 100);
+
+        let current = prevMidi + (targetMidi > prevMidi ? 1 : -1);
+        let count = 1;
+        const stepDir = targetMidi > prevMidi ? 1 : -1;
+
+        const interval = setInterval(() => {
+            if ((stepDir === 1 && current > targetMidi) || (stepDir === -1 && current < targetMidi)) {
+                clearInterval(interval);
+                return;
+            }
+            const k = document.getElementById("key-" + current);
+            if (k) {
+                k.classList.add(current === targetMidi ? "highlight-target" : "highlight-count");
+                k.innerHTML += `<span class="key-label">${count}</span>`;
+                playClick(current);
+            }
+            current += stepDir;
+            count++;
+        }, 250);
+    }
+
+    /* ================= APP FLOW ================= */
+
+    function loadStep() {
+        hideFeedback();
+        document.getElementById("keyboard-container").style.display = "none";
+        document.getElementById("phase-b-controls").classList.add("hidden");
+        document.getElementById("phase-a-controls").classList.remove("hidden");
+        document.getElementById("btn-submit").innerText = "Check Staff Step";
+        
+        document.querySelectorAll(".btn-acc").forEach(b => b.classList.remove("active"));
+        
+        state.phase = 'A';
+        state.currentAccidental = '';
+        
+        if (state.currentPartial === 1) {
+            state.currentGeneric = getGenericIndexFromMidi(state.expectedPartials[1].midi) - 2; // offset so they move it
+        } else {
+            state.currentGeneric = state.userGenerics[state.currentPartial - 1]; // start at prev note
+        }
+
+        let tutName = state.mode === 'tutorial' ? TUTORIALS[state.tutIndex].name : "Practice";
+        document.getElementById("progress-text").innerText = `${tutName} — Partial ${state.currentPartial} / ${state.maxPartial}`;
+        
+        const narBox = document.getElementById("narrative-text");
+        if (state.mode === 'tutorial' && NARRATIVE[state.currentPartial]) {
+            narBox.style.display = "block";
+            narBox.innerHTML = `<strong>${NARRATIVE[state.currentPartial].title}</strong>: ${NARRATIVE[state.currentPartial].desc}`;
+            
+            document.getElementById("help-text").innerText = NARRATIVE[state.currentPartial].desc;
+            document.getElementById("help-link").href = "https://www.musictheory.net/lessons" + NARRATIVE[state.currentPartial].help;
+        } else {
+            narBox.style.display = "none";
+        }
+
+        updateBadges();
+        renderNotation();
+    }
+
+    function startTutorial(index) {
+        state.mode = 'tutorial';
+        state.tutIndex = index;
+        state.maxPartial = 8;
+        state.currentPartial = 1;
+        state.userGenerics = [];
+        state.userAccidentals = [];
+        state.expectedPartials = computeHarmonicSeries(TUTORIALS[index].midi, 8);
+        loadStep();
+    }
+
+    function submitAnswer() {
+        const target = state.expectedPartials[state.currentPartial];
+        
+        if (state.phase === 'A') {
+            if (state.currentGeneric === target.genericIndex) {
+                showFeedback("Correct line/space! Now determine accidentals.", "success");
+                state.phase = 'B';
+                document.getElementById("phase-a-controls").classList.add("hidden");
+                if (state.currentPartial === 1) {
+                    // For root, usually no accidentals needed for C, just skip to next
+                    document.getElementById("phase-b-controls").classList.remove("hidden");
+                } else {
+                    document.getElementById("phase-b-controls").classList.remove("hidden");
+                }
+                document.getElementById("btn-submit").innerText = "Submit Exact Pitch";
+            } else {
+                // Enharmonic check
+                const noAccMidi = getMidiFromGeneric(state.currentGeneric, '');
+                if (Math.abs(target.midi - noAccMidi) <= 2) {
+                    showFeedback("Enharmonic warning: Pitch sounds right, but spelling is wrong! The generic interval must strictly match the correct staff step.", "warning");
+                } else {
+                    showFeedback("Incorrect line/space. Count the generic staff steps!", "error");
+                }
+            }
+        } else if (state.phase === 'B') {
+            const userMidi = getMidiFromGeneric(state.currentGeneric, state.currentAccidental === 'nat' ? '' : state.currentAccidental);
+            if (userMidi === target.midi) {
+                showFeedback("Correct pitch! Listen to the partial.", "success");
+                state.userGenerics[state.currentPartial] = state.currentGeneric;
+                state.userAccidentals[state.currentPartial] = state.currentAccidental;
+                
+                initAudio().then(() => {
+                    const f0 = 440 * Math.pow(2, (state.expectedPartials[1].midi - 69) / 12);
+                    playHarmonics(f0, state.currentPartial);
+                });
+
+                setTimeout(() => {
+                    if (state.currentPartial < state.maxPartial) {
+                        state.currentPartial++;
+                        loadStep();
+                    } else {
+                        document.getElementById("modal-end").classList.add("active");
+                    }
+                }, 1500);
+            } else {
+                showFeedback("Incorrect accidental. Use the Half-step Check tool to count semitones!", "error");
+            }
+        }
+        updateBadges();
+    }
+
+    /* ================= EVENT LISTENERS ================= */
+
+    document.getElementById("btn-up").addEventListener("click", () => { initAudio(); state.currentGeneric++; playClick(getMidiFromGeneric(state.currentGeneric,'')); renderNotation(); });
+    document.getElementById("btn-down").addEventListener("click", () => { initAudio(); state.currentGeneric--; playClick(getMidiFromGeneric(state.currentGeneric,'')); renderNotation(); });
+
+    document.querySelectorAll(".btn-acc").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            initAudio();
+            document.querySelectorAll(".btn-acc").forEach(b => b.classList.remove("active"));
+            e.target.classList.add("active");
+            state.currentAccidental = e.target.dataset.acc;
+            const m = getMidiFromGeneric(state.currentGeneric, state.currentAccidental === 'nat' ? '' : state.currentAccidental);
+            playClick(m);
+            renderNotation();
+        });
+    });
+
+    document.getElementById("btn-submit").addEventListener("click", submitAnswer);
+    document.getElementById("btn-halfstep").addEventListener("click", animateHalfStepCheck);
+    
+    document.getElementById("btn-play-f0").addEventListener("click", async () => {
+        await initAudio();
+        playClick(state.expectedPartials[1].midi);
+    });
+    document.getElementById("btn-play-series").addEventListener("click", async () => {
+        await initAudio();
+        const f0 = 440 * Math.pow(2, (state.expectedPartials[1].midi - 69) / 12);
+        playHarmonics(f0, state.currentPartial === 1 ? state.maxPartial : state.currentPartial);
+    });
+
+    document.getElementById("btn-intro").addEventListener("click", () => document.getElementById("modal-intro").classList.add("active"));
+    document.getElementById("btn-help").addEventListener("click", () => document.getElementById("modal-help").classList.add("active"));
+
+    function closeModals() {
+        document.querySelectorAll(".modal-overlay").forEach(m => m.classList.remove("active"));
+    }
+
+    /* ================= PROGRESSION ================= */
+    window.startNextTutorial = () => {
+        closeModals();
+        let next = state.tutIndex + 1;
+        if (next >= TUTORIALS.length) next = 0;
+        startTutorial(next);
+    };
+
+    window.startPracticeMode = () => {
+        closeModals();
+        state.mode = 'practice';
+        state.maxPartial = 8;
+        state.currentPartial = 1;
+        const randomMidi = Math.floor(Math.random() * (48 - 36 + 1)) + 36; // C2 to C3
+        state.expectedPartials = computeHarmonicSeries(randomMidi, 8);
+        loadStep();
+    };
+
+    window.startBonusMode = () => {
+        closeModals();
+        state.mode = 'bonus';
+        state.maxPartial = 12;
+        // Continue from current tutorial root
+        state.expectedPartials = computeHarmonicSeries(state.expectedPartials[1].midi, 12);
+        // Fast forward to 9
+        state.currentPartial = 9;
+        loadStep();
+    };
+
+    /* ================= INIT ================= */
+    window.onload = () => {
+        buildPiano();
+        startTutorial(0);
+    };
+
+</script>
+</body>
+</html>

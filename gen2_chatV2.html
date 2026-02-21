@@ -1,0 +1,2175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Harmonic Series Builder (Staff + Keyboard)</title>
+
+  <!-- VexFlow + Tone.js (CDN, no build step) -->
+  <script src="https://unpkg.com/vexflow@4.2.5/build/cjs/vexflow.js"></script>
+  <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0d10;
+      --panel:#11151b;
+      --panel2:#0f1318;
+      --text:#e8edf3;
+      --muted:#a9b4c0;
+      --muted2:#7e8a97;
+      --accent:#5dd6ff;
+      --good:#41d18a;
+      --warn:#ffcc66;
+      --bad:#ff6b6b;
+      --btn:#1b2330;
+      --btn2:#202b3a;
+      --border:#253042;
+      --noteGray:#9aa6b2;
+      --kbdWhite:#e9edf2;
+      --kbdBlack:#1a1f26;
+      --kbdBorder:#3a4454;
+      --kbdHi:#5dd6ff;
+      --kbdHi2:#41d18a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    .app{
+      max-width:980px;
+      margin:0 auto;
+      padding:14px 14px 24px;
+      padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+    }
+    header{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .title{
+      display:flex; flex-direction:column;
+      gap:4px;
+      min-width: 240px;
+    }
+    .title h1{
+      margin:0;
+      font-size: 18px;
+      line-height:1.15;
+      letter-spacing:.2px;
+    }
+    .title .sub{
+      color:var(--muted);
+      font-size: 12.5px;
+      line-height:1.25;
+    }
+
+    .topControls{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      background:var(--panel);
+      border:1px solid var(--border);
+      padding:10px 12px;
+      border-radius:999px;
+      box-shadow: var(--shadow);
+    }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      user-select:none;
+      font-size:13px;
+      color:var(--text);
+      white-space:nowrap;
+    }
+    .toggle input{ transform: scale(1.2); }
+    .btn{
+      appearance:none;
+      border:1px solid var(--border);
+      background:var(--btn);
+      color:var(--text);
+      padding:12px 14px;
+      border-radius: 14px;
+      font-size:14px;
+      font-weight:600;
+      cursor:pointer;
+      min-height:44px; /* big touch targets */
+      box-shadow: var(--shadow);
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.secondary{ background:var(--btn2); }
+    .btn.good{ border-color: rgba(65,209,138,.5); }
+    .btn.bad{ border-color: rgba(255,107,107,.55); }
+    .btn:disabled{
+      opacity:.45; cursor:not-allowed; transform:none;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:12px;
+      align-items:start;
+    }
+    @media (max-width: 880px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background: var(--panel);
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .cardHead{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    .cardHead .h{
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:.2px;
+    }
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .badge .chip{
+      font-size:12px;
+      color:var(--text);
+      background: var(--panel2);
+      border:1px solid var(--border);
+      padding:6px 10px;
+      border-radius:999px;
+      white-space:nowrap;
+    }
+
+    .cardBody{ padding:12px 14px; }
+
+    /* Notation panel: try dark (white notation on black). If fallback, use .notationLight class */
+    .notationWrap{
+      background:#000;
+      border-bottom:1px solid var(--border);
+      padding:10px 10px 6px;
+    }
+    .notationWrap.notationLight{
+      background:#fff;
+    }
+    .notationCaption{
+      padding:8px 14px 12px;
+      color:var(--muted);
+      font-size:12.5px;
+      border-top:1px solid var(--border);
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0));
+    }
+    .notationCaption .small{
+      font-size:12px;
+      color:var(--muted2);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .row > * { flex: 0 0 auto; }
+    .spacer{ flex: 1 1 auto; }
+
+    .sectionTitle{
+      font-size:13px;
+      font-weight:800;
+      margin:10px 0 8px;
+      color:var(--text);
+    }
+    .hint{
+      color:var(--muted);
+      font-size:12.5px;
+      line-height:1.35;
+    }
+    .hint strong{ color: var(--text); }
+    .divider{
+      height:1px;
+      background: var(--border);
+      margin:12px 0;
+    }
+
+    .taskBox{
+      background: var(--panel2);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding:12px;
+    }
+    .taskLine{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:baseline;
+      justify-content:space-between;
+      margin-bottom:6px;
+    }
+    .taskLine .big{
+      font-size:15px;
+      font-weight:900;
+    }
+    .taskLine .muted{
+      color:var(--muted);
+      font-size:12.5px;
+    }
+    .status{
+      margin-top:8px;
+      font-size:13px;
+      line-height:1.35;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      color: var(--text);
+    }
+    .status.good{ border-color: rgba(65,209,138,.6); }
+    .status.warn{ border-color: rgba(255,204,102,.6); }
+    .status.bad{ border-color: rgba(255,107,107,.6); }
+
+    .accRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .accBtn{
+      min-width:56px;
+      padding:12px 10px;
+      border-radius: 14px;
+      font-weight:800;
+    }
+    .accBtn.selected{
+      outline: 2px solid rgba(93,214,255,.7);
+      border-color: rgba(93,214,255,.55);
+    }
+
+    .halfStepPanel{
+      margin-top:10px;
+      background: rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      padding:10px;
+      display:none;
+    }
+    .halfStepPanel.open{ display:block; }
+    .hsTop{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    }
+    .hsTitle{ font-weight:900; font-size:13px; }
+    .hsCheat{
+      font-size:12px; color:var(--muted2);
+      border:1px dashed rgba(255,255,255,.18);
+      padding:6px 10px; border-radius:999px;
+    }
+    .hsControls{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;
+    }
+    .hsNote{
+      margin-top:8px;
+      font-size:12.5px;
+      color:var(--muted);
+      line-height:1.35;
+    }
+
+    /* Keyboard */
+    .kbdWrap{
+      margin-top:12px;
+    }
+    .kbdScroll{
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      border-radius: var(--radius);
+      padding:10px;
+    }
+    .kbd{
+      position:relative;
+      height:160px;
+      width: 760px; /* wider than many phones -> scroll */
+      user-select:none;
+    }
+    .keyWhite{
+      position:absolute; bottom:0;
+      width: 44px; height: 150px;
+      background: var(--kbdWhite);
+      border:1px solid var(--kbdBorder);
+      border-radius: 8px;
+      box-sizing:border-box;
+      cursor:pointer;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      padding-bottom:6px;
+      font-size:11px;
+      color:#2a3442;
+    }
+    .keyWhite .cMark{
+      opacity:.55;
+      font-weight:900;
+    }
+    .keyBlack{
+      position:absolute; bottom:64px;
+      width: 28px; height: 88px;
+      background: var(--kbdBlack);
+      border:1px solid #111;
+      border-radius: 7px;
+      z-index:2;
+      cursor:pointer;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      padding-bottom:6px;
+      font-size:10px;
+      color: rgba(255,255,255,.6);
+    }
+    .keyHi{
+      box-shadow: 0 0 0 3px rgba(93,214,255,.55) inset, 0 0 18px rgba(93,214,255,.25);
+    }
+    .keyStep{
+      box-shadow: 0 0 0 3px rgba(65,209,138,.55) inset, 0 0 18px rgba(65,209,138,.25);
+    }
+    .stepBadge{
+      position:absolute;
+      top:10px;
+      left:50%;
+      transform:translateX(-50%);
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      border:1px solid rgba(255,255,255,.18);
+      border-radius: 999px;
+      padding:2px 8px;
+      font-size:11px;
+      font-weight:900;
+      pointer-events:none;
+    }
+
+    /* Lists / practice */
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .listItem{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+      align-items:baseline;
+      flex-wrap:wrap;
+    }
+    .listItem .left{
+      display:flex; gap:10px; align-items:baseline; flex-wrap:wrap;
+    }
+    .listItem .pnum{
+      font-weight:1000;
+      color: var(--text);
+    }
+    .listItem .note{
+      font-weight:900;
+      color: var(--good);
+    }
+    .listItem .hz{
+      color: var(--muted2);
+      font-size:12px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .mini{
+      font-size:12px;
+      color: var(--muted);
+    }
+
+    /* Modal + overlay */
+    .overlay{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.8);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      z-index: 9999;
+    }
+    .overlay .box{
+      width:min(520px, 100%);
+      background: var(--panel);
+      border:1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+    .overlay .box h2{
+      margin:0 0 8px;
+      font-size:18px;
+      letter-spacing:.2px;
+    }
+    .overlay .box p{ margin:0 0 12px; color:var(--muted); line-height:1.35; }
+    .overlay .box .btn{ width:100%; font-size:16px; padding:14px 16px; }
+
+    .modal{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:16px;
+      background: rgba(0,0,0,.65);
+      z-index: 9998;
+    }
+    .modal.open{ display:flex; }
+    .modal .box{
+      width:min(560px, 100%);
+      background: var(--panel);
+      border:1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .modal .head{
+      padding:12px 14px;
+      border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .modal .head .h{ font-weight:1000; }
+    .modal .body{ padding:12px 14px; color:var(--muted); line-height:1.4; font-size:13.5px; }
+    .modal a{ color: var(--accent); text-decoration:none; }
+    .modal a:hover{ text-decoration:underline; }
+
+    .toast{
+      position:fixed;
+      left:50%;
+      bottom:14px;
+      transform:translateX(-50%);
+      background: rgba(17,21,27,.92);
+      border:1px solid var(--border);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      box-shadow: var(--shadow);
+      font-size:13px;
+      display:none;
+      z-index: 9997;
+      max-width: min(92vw, 680px);
+      text-align:center;
+    }
+    .toast.show{ display:block; }
+
+    details.advanced{
+      margin-top:10px;
+      border:1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+      padding:10px 12px;
+    }
+    details.advanced summary{
+      cursor:pointer;
+      font-weight:900;
+      color: var(--text);
+      list-style:none;
+    }
+    details.advanced summary::-webkit-details-marker{ display:none; }
+    details.advanced .body{ margin-top:8px; color:var(--muted); font-size:12.5px; line-height:1.35; }
+    .mono{ font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace; }
+  </style>
+</head>
+
+<body>
+  <!-- Fullscreen audio unlock overlay -->
+  <div id="audioOverlay" class="overlay" role="dialog" aria-modal="true">
+    <div class="box">
+      <h2>Tap to enable audio</h2>
+      <p>This lesson uses <strong>pure sine waves</strong>. Your browser requires a tap before sound can play.</p>
+      <button id="enableAudioBtn" class="btn good">Enable Audio</button>
+      <p class="mini" style="margin-top:10px">
+        Tip: if audio is still silent, check your device mute switch / volume.
+      </p>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div id="helpModal" class="modal" role="dialog" aria-modal="true" aria-label="Help">
+    <div class="box">
+      <div class="head">
+        <div class="h">Help</div>
+        <button id="closeHelp" class="btn secondary" style="min-height:40px;padding:8px 10px">Close</button>
+      </div>
+      <div class="body">
+        <div style="margin-bottom:10px; color: var(--text); font-weight:900;">Two rules you’ll use constantly:</div>
+        <ul style="margin:0 0 12px 18px; padding:0;">
+          <li><strong>Generic interval (staff counting):</strong> INCLUDE the starting note as <strong>1</strong>.</li>
+          <li><strong>Half-step counting (keyboard):</strong> DO NOT count the starting key. The <strong>next</strong> key is <strong>1</strong>.</li>
+        </ul>
+        <div style="margin-bottom:10px; color: var(--text); font-weight:900;">Quick links (musictheory.net):</div>
+        <ul style="margin:0 0 0 18px; padding:0;">
+          <li><a href="https://www.musictheory.net/lessons/10" target="_blank" rel="noopener">Staff, Clefs</a></li>
+          <li><a href="https://www.musictheory.net/lessons/20" target="_blank" rel="noopener">Accidentals</a></li>
+          <li><a href="https://www.musictheory.net/lessons/30" target="_blank" rel="noopener">Generic Intervals</a></li>
+          <li><a href="https://www.musictheory.net/lessons/31" target="_blank" rel="noopener">Specific Intervals</a></li>
+          <li><a href="https://www.musictheory.net/lessons/32" target="_blank" rel="noopener">Writing Intervals</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div class="app">
+    <header>
+      <div class="title">
+        <h1>Harmonic Series Builder (Staff + Keyboard)</h1>
+        <div class="sub">Learn the first 8 partials: generic interval first → then half-step check.</div>
+      </div>
+
+      <div class="topControls">
+        <div class="pill">
+          <label class="toggle" title="Tutorial is guided. Practice lets you pick/randomize fundamentals.">
+            <input id="practiceToggle" type="checkbox" />
+            Practice mode
+          </label>
+        </div>
+        <div class="pill">
+          <label class="toggle" title="Reminders show step-count overlays and a small interval cheat hint.">
+            <input id="remindersToggle" type="checkbox" checked />
+            Reminders: <span id="remindersLabel">ON</span>
+          </label>
+        </div>
+        <button id="helpBtn" class="btn secondary" title="Short help + links">Help</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT: Notation + keyboard -->
+      <div class="card">
+        <div class="cardHead">
+          <div class="h">Grand Staff</div>
+          <div class="badge">
+            <span class="chip">Fundamental: <span id="fundamentalText" class="mono">B2</span></span>
+            <span class="chip">Target cents: <span id="centsBadge" class="mono">—</span></span>
+          </div>
+        </div>
+
+        <div id="notationWrap" class="notationWrap">
+          <div id="vf" aria-label="Notation" style="width:100%;"></div>
+        </div>
+        <div id="overlapCaption" class="notationCaption" style="display:none;">
+          Same note in bass or treble clef <span class="small">(overlap window G3–F4)</span>
+        </div>
+
+        <div class="cardBody">
+          <div class="row" style="gap:8px;">
+            <button id="playFundBtn" class="btn">Play Fundamental</button>
+            <button id="playSeriesBtn" class="btn secondary">Play Series (up to current partial)</button>
+          </div>
+
+          <div class="kbdWrap">
+            <div class="sectionTitle">Compact keyboard (2 octaves)</div>
+            <div class="hint">
+              Half-step counting rule: <strong>don’t count the starting key</strong>. The next key is <strong>1</strong>.
+            </div>
+            <div class="kbdScroll" id="kbdScroll">
+              <div id="kbd" class="kbd" aria-label="Piano keyboard"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Task + progress -->
+      <div class="card">
+        <div class="cardHead">
+          <div class="h">Task</div>
+          <div class="badge">
+            <span class="chip">Current: <span id="currentPartialText">1st partial</span></span>
+          </div>
+        </div>
+
+        <div class="cardBody">
+          <!-- Practice controls -->
+          <div id="practiceControls" class="taskBox" style="display:none; margin-bottom:12px;">
+            <div class="taskLine">
+              <div class="big">Practice setup</div>
+              <div class="muted">Fundamental between F1–F4</div>
+            </div>
+            <div class="row">
+              <label class="mini" for="fundSelect" style="color:var(--muted);">Fundamental:</label>
+              <select id="fundSelect" class="btn secondary" style="min-height:44px;padding:10px 12px;">
+              </select>
+              <button id="randomFundBtn" class="btn">Random</button>
+              <div class="spacer"></div>
+              <div class="mini">Streak: <span id="streak" class="mono">0</span></div>
+            </div>
+            <div class="mini" style="margin-top:8px;color:var(--muted2);">
+              In practice, Reminders default OFF. No heavy scoring—just repetition.
+            </div>
+          </div>
+
+          <div class="taskBox">
+            <div class="taskLine">
+              <div class="big" id="taskHeadline">1st partial: place the fundamental</div>
+              <div class="muted" id="taskSubline">Start with the note name + octave, then add accidental if needed.</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="sectionTitle">Step A — Put the note on the right line/space (generic interval)</div>
+            <div class="row">
+              <button id="upBtn" class="btn">⬆️ Move Note Up</button>
+              <button id="downBtn" class="btn">⬇️ Move Note Down</button>
+              <div class="spacer"></div>
+              <div class="mini">Your note: <span id="userNoteText" class="mono">—</span></div>
+            </div>
+            <div class="hint" id="genericHint" style="margin-top:8px;">
+              Staff counting for generic intervals: INCLUDE the starting note as <strong>1</strong>.
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="sectionTitle">Step B — Add accidental if needed (half-step check)</div>
+            <div class="accRow" id="accRow">
+              <!-- accidental buttons inserted by JS -->
+            </div>
+
+            <div class="row" style="margin-top:10px;">
+              <button id="halfStepToggleBtn" class="btn secondary" disabled>Half-step check</button>
+              <div class="spacer"></div>
+              <button id="submitBtn" class="btn good" disabled>Submit</button>
+            </div>
+
+            <div id="halfStepPanel" class="halfStepPanel" aria-label="Half-step check panel">
+              <div class="hsTop">
+                <div class="hsTitle">Half-step check</div>
+                <div id="hsCheat" class="hsCheat" style="display:none;">P5=7, P4=5, M3=4, m3=3</div>
+              </div>
+              <div class="hsControls">
+                <button id="prevHalfBtn" class="btn secondary" disabled>← Prev half-step</button>
+                <button id="nextHalfBtn" class="btn">Next half-step →</button>
+                <button id="resetHalfBtn" class="btn secondary">Reset</button>
+              </div>
+              <div class="hsNote" id="hsNote">
+                Start key is labeled <strong>0</strong> but not counted or lit.
+              </div>
+            </div>
+
+            <div id="statusBox" class="status" style="margin-top:12px;">
+              Move the note to the right line/space. Then you can add accidentals.
+            </div>
+          </div>
+
+          <details class="advanced" id="advancedPanel">
+            <summary>Advanced (optional)</summary>
+            <div class="body" id="advancedBody">
+              Ratio is hidden by default to reduce clutter. (If you want it later, it can go here.)
+            </div>
+          </details>
+
+          <div class="sectionTitle" style="margin-top:12px;">Completed partials (Hz shown after completion)</div>
+          <div id="completedList" class="list"></div>
+
+          <div id="afterFinishNote" class="hint" style="display:none; margin-top:12px;">
+            More partials continue (whole-tone-ish, then chromatic-ish, then microtonal).
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/**
+ * Harmonic Series Builder (Staff + Keyboard)
+ * - Single-file app for GitHub Pages
+ * - VexFlow for notation, Tone.js for audio
+ * - Tutorial mode default; practice optional
+ * - Two-step per partial: staff position (generic) -> accidental (half-step check)
+ * - Guardrails: accidental render self-test; never crash if a glyph fails
+ */
+
+(() => {
+  const VF = Vex.Flow;
+
+  // ---------- DOM ----------
+  const el = (id) => document.getElementById(id);
+  const audioOverlay = el('audioOverlay');
+  const enableAudioBtn = el('enableAudioBtn');
+
+  const practiceToggle = el('practiceToggle');
+  const practiceControls = el('practiceControls');
+  const fundSelect = el('fundSelect');
+  const randomFundBtn = el('randomFundBtn');
+  const streakEl = el('streak');
+
+  const remindersToggle = el('remindersToggle');
+  const remindersLabel = el('remindersLabel');
+  const hsCheat = el('hsCheat');
+
+  const helpBtn = el('helpBtn');
+  const helpModal = el('helpModal');
+  const closeHelp = el('closeHelp');
+
+  const vfDiv = el('vf');
+  const notationWrap = el('notationWrap');
+  const overlapCaption = el('overlapCaption');
+
+  const fundamentalText = el('fundamentalText');
+  const centsBadge = el('centsBadge');
+  const currentPartialText = el('currentPartialText');
+
+  const playFundBtn = el('playFundBtn');
+  const playSeriesBtn = el('playSeriesBtn');
+
+  const taskHeadline = el('taskHeadline');
+  const taskSubline = el('taskSubline');
+  const genericHint = el('genericHint');
+
+  const upBtn = el('upBtn');
+  const downBtn = el('downBtn');
+
+  const userNoteText = el('userNoteText');
+  const accRow = el('accRow');
+  const halfStepToggleBtn = el('halfStepToggleBtn');
+  const halfStepPanel = el('halfStepPanel');
+  const prevHalfBtn = el('prevHalfBtn');
+  const nextHalfBtn = el('nextHalfBtn');
+  const resetHalfBtn = el('resetHalfBtn');
+  const hsNote = el('hsNote');
+
+  const submitBtn = el('submitBtn');
+  const statusBox = el('statusBox');
+  const toast = el('toast');
+
+  const completedList = el('completedList');
+  const afterFinishNote = el('afterFinishNote');
+  const advancedPanel = el('advancedPanel');
+
+  const kbdScroll = el('kbdScroll');
+  const kbdEl = el('kbd');
+
+  // ---------- Utilities ----------
+  const NOTE_TO_PC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  const LETTERS = ['C','D','E','F','G','A','B'];
+  const ACC_TO_OFFSET = { 'bb':-2, 'b':-1, 'n':0, '':0, '#':1, '##':2 };
+  const OFFSET_TO_ACC = { '-2':'bb', '-1':'b', '0':'', '1':'#', '2':'##' };
+
+  function showToast(msg, ms=2200){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    window.clearTimeout(showToast._t);
+    showToast._t = window.setTimeout(()=>toast.classList.remove('show'), ms);
+  }
+
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+  function noteToMidi(note){
+    // note: {letter, accidental:'bb'|'b'|''|'#'|'##', octave}
+    const pc = NOTE_TO_PC[note.letter] + (ACC_TO_OFFSET[note.accidental] || 0);
+    // MIDI: C-1 = 0, C4=60 => midi = 12*(octave+1)+pc
+    return 12*(note.octave+1) + ((pc % 12) + 12) % 12;
+  }
+
+  function midiToSharpName(midi){
+    // used for bonus notes (9-16) display: sharp-friendly spelling
+    const names = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+    const pc = ((midi%12)+12)%12;
+    const octave = Math.floor(midi/12)-1;
+    return names[pc] + octave;
+  }
+
+  function parseNoteName(str){
+    // e.g., "B2", "F#3", "Gb2", "C##4", "Ebb3"
+    const m = String(str).trim().match(/^([A-Ga-g])((?:bb)|(?:##)|b|#|)?(\-?\d+)$/);
+    if(!m) return null;
+    const letter = m[1].toUpperCase();
+    const accidental = (m[2] || '').replace('♭','b').replace('♯','#');
+    const octave = parseInt(m[3],10);
+    return { letter, accidental, octave };
+  }
+
+  function formatNote(note){
+    return `${note.letter}${note.accidental}${note.octave}`;
+  }
+
+  function formatPartialOrdinal(n){
+    const suffix = (n%100>=11 && n%100<=13) ? 'th' : (n%10===1?'st':n%10===2?'nd':n%10===3?'rd':'th');
+    return `${n}${suffix} partial`;
+  }
+
+  function diatonicStep(note, dir){
+    // dir: +1 up one staff step, -1 down one staff step
+    const i = LETTERS.indexOf(note.letter);
+    let j = i + dir;
+    let octave = note.octave;
+    if(j > 6){ j = 0; octave += 1; }
+    if(j < 0){ j = 6; octave -= 1; }
+    return { letter: LETTERS[j], octave };
+  }
+
+  function naturalMidi(letter, octave){
+    return 12*(octave+1) + NOTE_TO_PC[letter];
+  }
+
+  function computeGenericTarget(start, genericSize){
+    // genericSize: 3rd=3, 5th=5, etc. Staff counting includes starting note as 1.
+    const startIndex = LETTERS.indexOf(start.letter);
+    const steps = genericSize - 1;
+    const sum = startIndex + steps;
+    const tgtIndex = ((sum % 7) + 7) % 7;
+    const octInc = Math.floor(sum / 7);
+    return { letter: LETTERS[tgtIndex], octave: start.octave + octInc };
+  }
+
+  function computeSpecificAccidental(startNoteFull, targetGeneric, desiredSemitones){
+    // Start pitch includes its accidental. Target generic has letter+octave (no accidental yet).
+    const startMidi = noteToMidi(startNoteFull);
+    const targetNatural = naturalMidi(targetGeneric.letter, targetGeneric.octave);
+    const naturalDistance = targetNatural - naturalMidi(startNoteFull.letter, startNoteFull.octave);
+    // Adjust naturalDistance to match actual octave span implied by targetGeneric vs startNoteFull
+    // Use MIDI to anchor the octave correctly:
+    const startNaturalMidi = naturalMidi(startNoteFull.letter, startNoteFull.octave);
+    const targetNaturalDistance = targetNatural - startNaturalMidi;
+
+    const needed = desiredSemitones - ((targetNaturalDistance - (startMidi - startNaturalMidi)));
+    // Explanation:
+    // (startMidi - startNaturalMidi) is start accidental offset.
+    // We want: (targetNaturalDistance + targetAccOffset) - (startMidi - startNaturalMidi + target?) == desiredSemitones
+    // Rearranged: targetAccOffset = desiredSemitones - (targetNaturalDistance - startAccOffset)
+    const startAccOffset = startMidi - startNaturalMidi;
+    const targetAccOffset = desiredSemitones - (targetNaturalDistance - startAccOffset);
+
+    const clamped = clamp(targetAccOffset, -2, 2);
+    return OFFSET_TO_ACC[String(clamped)];
+  }
+
+  function centsBetween(freqA, freqB){
+    // cents from B to A: + if A higher than B
+    return 1200 * Math.log2(freqA / freqB);
+  }
+
+  // ---------- Audio (Tone.js) ----------
+  let audioReady = false;
+  let synth = null;
+  let quietSynth = null; // quieter for keyboard taps
+
+  async function enableAudio(){
+    try{
+      await Tone.start();
+      // Main synth for "play"
+      synth = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.015, decay: 0.0, sustain: 1.0, release: 0.02 }
+      }).toDestination();
+      // Quiet synth for keyboard taps
+      quietSynth = new Tone.Synth({
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 0.0, sustain: 1.0, release: 0.02 }
+      }).toDestination();
+      quietSynth.volume.value = -18; // quieter
+      synth.volume.value = -10;
+      audioReady = true;
+      audioOverlay.style.display = 'none';
+      showToast('Audio enabled.');
+    }catch(e){
+      console.error(e);
+      showToast('Audio could not be enabled.');
+    }
+  }
+
+  function playFreq(freq, dur=0.8, quiet=false){
+    if(!audioReady) return;
+    const s = quiet ? quietSynth : synth;
+    const now = Tone.now();
+    s.triggerAttackRelease(freq, dur, now);
+  }
+
+  // ---------- Keyboard UI ----------
+  // Build a 2-octave keyboard: C3 to B4 (24 semitones)
+  // Always visible; scroll container keeps highlighted key visible.
+  const KBD_START_MIDI = 48; // C3
+  const KBD_KEYS = 24; // up to B4
+  const BLACK_PCS = new Set([1,3,6,8,10]); // C#, D#, F#, G#, A#
+  let keyDivsByMidi = new Map(); // midi -> div
+
+  function buildKeyboard(){
+    kbdEl.innerHTML = '';
+    keyDivsByMidi.clear();
+
+    // White keys positions
+    const whiteOrder = [];
+    for(let i=0;i<KBD_KEYS;i++){
+      const midi = KBD_START_MIDI + i;
+      const pc = ((midi%12)+12)%12;
+      if(!BLACK_PCS.has(pc)) whiteOrder.push(midi);
+    }
+
+    const whiteW = 44;
+    const blackW = 28;
+
+    // place whites
+    whiteOrder.forEach((midi, idx) => {
+      const d = document.createElement('div');
+      d.className = 'keyWhite';
+      d.style.left = (idx*whiteW) + 'px';
+      d.dataset.midi = midi;
+
+      // faint C markers
+      const name = midiToSharpName(midi);
+      if(name.startsWith('C')){
+        const span = document.createElement('span');
+        span.className = 'cMark';
+        span.textContent = 'C';
+        d.appendChild(span);
+      }
+      d.addEventListener('click', () => {
+        // Play the currently selected pitch (equal-tempered MIDI)
+        const freq = Tone.Frequency(midi, 'midi').toFrequency();
+        playFreq(freq, 0.45, true);
+      });
+      kbdEl.appendChild(d);
+      keyDivsByMidi.set(midi, d);
+    });
+
+    // place blacks (relative to whites)
+    // Map each midi -> x position based on nearest white key index
+    function whiteIndexForMidi(midi){
+      // Count white keys from start to this midi
+      let count = 0;
+      for(let m=KBD_START_MIDI; m<=midi; m++){
+        const pc = ((m%12)+12)%12;
+        if(!BLACK_PCS.has(pc)) count++;
+      }
+      return count-1;
+    }
+
+    for(let i=0;i<KBD_KEYS;i++){
+      const midi = KBD_START_MIDI + i;
+      const pc = ((midi%12)+12)%12;
+      if(!BLACK_PCS.has(pc)) continue;
+
+      const wi = whiteIndexForMidi(midi);
+      const d = document.createElement('div');
+      d.className = 'keyBlack';
+      // black key sits between white wi and wi+1
+      d.style.left = (wi*whiteW + (whiteW - blackW/2)) + 'px';
+      d.dataset.midi = midi;
+
+      d.addEventListener('click', () => {
+        const freq = Tone.Frequency(midi, 'midi').toFrequency();
+        playFreq(freq, 0.45, true);
+      });
+      kbdEl.appendChild(d);
+      keyDivsByMidi.set(midi, d);
+    }
+  }
+
+  function clearKeyboardHighlights(){
+    for(const d of keyDivsByMidi.values()){
+      d.classList.remove('keyHi', 'keyStep');
+      // remove step badge
+      const b = d.querySelector('.stepBadge');
+      if(b) b.remove();
+    }
+  }
+
+  function highlightKeyboardMidi(midi, cls='keyHi'){
+    clearKeyboardHighlights();
+    const d = keyDivsByMidi.get(midi);
+    if(!d) return;
+    d.classList.add(cls);
+    // scroll into view
+    d.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  }
+
+  function markHalfStepMidi(midi, countLabel=null){
+    const d = keyDivsByMidi.get(midi);
+    if(!d) return;
+    d.classList.add('keyStep');
+    if(countLabel !== null){
+      const badge = document.createElement('div');
+      badge.className = 'stepBadge';
+      badge.textContent = String(countLabel);
+      d.appendChild(badge);
+    }
+  }
+
+  // ---------- VexFlow rendering ----------
+  let renderer, context;
+  let vfReady = false;
+  let useLightNotationFallback = false;
+
+  function initVexflow(){
+    vfDiv.innerHTML = '';
+    renderer = new VF.Renderer(vfDiv, VF.Renderer.Backends.SVG);
+    renderer.resize(vfDiv.clientWidth || 680, 240);
+    context = renderer.getContext();
+
+    vfReady = true;
+  }
+
+  function resizeVexflow(){
+    if(!vfReady) return;
+    const w = vfDiv.clientWidth || 680;
+    renderer.resize(w, 240);
+  }
+
+  // Map to VexFlow key string like "c#/4"
+  function toVexKey(note){
+    const l = note.letter.toLowerCase();
+    const acc = note.accidental;
+    // VexFlow uses 'b', '#', '##', 'bb', 'n'
+    const a = (acc === '' ? '' : acc);
+    return `${l}${a}/${note.octave}`;
+  }
+
+  function noteHomeClef(midi){
+    // Simple split: C4 (60) and above -> treble, below -> bass
+    return midi >= 60 ? 'treble' : 'bass';
+  }
+
+  function inOverlap(midi){
+    // overlap window: G3 through F4 inclusive
+    // G3=55, F4=65
+    return midi >= 55 && midi <= 65;
+  }
+
+  function renderNotation(state){
+    if(!vfReady) initVexflow();
+
+    // Attempt dark notation (white on black). If anything throws, fallback to light panel.
+    function draw(withDark){
+      vfDiv.innerHTML = '';
+      renderer = new VF.Renderer(vfDiv, VF.Renderer.Backends.SVG);
+      renderer.resize(vfDiv.clientWidth || 680, 240);
+      context = renderer.getContext();
+
+      // Background handled by CSS on notationWrap; we just set stroke/fill styles.
+      const staffColor = withDark ? '#ffffff' : '#000000';
+      const noteColor = withDark ? '#ffffff' : '#000000';
+
+      // Grand staff layout
+      const w = (vfDiv.clientWidth || 680);
+      const left = 18;
+      const topTreble = 24;
+      const topBass = 128;
+      const staffW = w - 2*left;
+
+      const treble = new VF.Stave(left, topTreble, staffW);
+      treble.addClef('treble');
+      treble.setContext(context);
+      treble.setStyle({ strokeStyle: staffColor, fillStyle: staffColor });
+
+      const bass = new VF.Stave(left, topBass, staffW);
+      bass.addClef('bass');
+      bass.setContext(context);
+      bass.setStyle({ strokeStyle: staffColor, fillStyle: staffColor });
+
+      // Connectors
+      const brace = new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.BRACE);
+      const leftLine = new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.SINGLE_LEFT);
+      const rightLine = new VF.StaveConnector(treble, bass).setType(VF.StaveConnector.type.SINGLE_RIGHT);
+
+      [brace, leftLine, rightLine].forEach(c => {
+        c.setContext(context);
+        c.setStyle({ strokeStyle: staffColor, fillStyle: staffColor });
+      });
+
+      treble.draw();
+      bass.draw();
+      brace.draw(); leftLine.draw(); rightLine.draw();
+
+      // Build note arrays
+      const allNotesToDraw = [];
+
+      // Completed notes (main, normal size)
+      for(const item of state.completed){
+        allNotesToDraw.push({ note: item.note, style:'completed', small:false });
+      }
+
+      // Current note (user movable) should appear too
+      allNotesToDraw.push({ note: state.userFullNote(), style:'current', small:false });
+
+      // After finishing 1–8, show bonus 9–16 (small stemless gray)
+      if(state.showBonus){
+        for(const bn of state.bonusNotes){
+          allNotesToDraw.push({ note: bn, style:'bonus', small:true, stemless:true });
+        }
+      }
+
+      // For simplicity/reliability: draw each note as a single whole note on either treble or bass,
+      // and separately handle overlap ghost notes (small gray + parentheses) for CURRENT note only.
+      // (This avoids complex multi-voice measures and stays stable on mobile.)
+      function drawSingleNote(note, clef, opts){
+        const key = toVexKey(note);
+        const duration = 'w';
+        const sn = new VF.StaveNote({ clef, keys:[key], duration });
+
+        // Accidentals
+        if(note.accidental && note.accidental !== ''){
+          sn.addModifier(new VF.Accidental(note.accidental), 0);
+        }
+
+        if(opts.stemless){
+          // no stem: use whole note already; additionally set stem to false if available
+          try{ sn.setStem(null); }catch(e){}
+        }
+
+        // Styling
+        if(opts.style === 'current'){
+          sn.setStyle({ fillStyle: noteColor, strokeStyle: noteColor });
+        }else if(opts.style === 'completed'){
+          sn.setStyle({ fillStyle: noteColor, strokeStyle: noteColor });
+        }else if(opts.style === 'bonus'){
+          sn.setStyle({ fillStyle: withDark ? '#9aa6b2' : '#6c7a88', strokeStyle: withDark ? '#9aa6b2' : '#6c7a88' });
+        }else{
+          sn.setStyle({ fillStyle: noteColor, strokeStyle: noteColor });
+        }
+
+        // Make small if needed
+        if(opts.small){
+          try{ sn.setGlyphProps({ scale: 0.75 }); }catch(e){}
+        }
+
+        // Center in measure
+        const voice = new VF.Voice({ num_beats: 4, beat_value: 4 });
+        voice.setStrict(false);
+        voice.addTickables([sn]);
+
+        const formatter = new VF.Formatter().joinVoices([voice]).format([voice], staffW - 40);
+        const stave = (clef === 'treble') ? treble : bass;
+        voice.draw(context, stave);
+      }
+
+      // Draw all notes (completed/current/bonus)
+      // NOTE: Completed/current will overlap in the same x-position; that's ok for this pedagogy:
+      // students focus on the current note, while completed are listed on the right panel with Hz.
+      // This keeps VexFlow usage stable and avoids multi-note stacking complexity.
+      for(const entry of allNotesToDraw){
+        const midi = noteToMidi(entry.note);
+        const clef = noteHomeClef(midi);
+        drawSingleNote(entry.note, clef, entry);
+      }
+
+      // Overlap ghost note for CURRENT note only
+      const currentMidi = noteToMidi(state.userFullNote());
+      const isOverlap = inOverlap(currentMidi);
+      overlapCaption.style.display = isOverlap ? 'block' : 'none';
+
+      if(isOverlap){
+        const home = noteHomeClef(currentMidi);
+        const other = (home === 'treble') ? 'bass' : 'treble';
+        // ghost style: gray + smaller + parentheses annotations
+        const ghostKey = toVexKey(state.userFullNote());
+        const ghost = new VF.StaveNote({ clef: other, keys:[ghostKey], duration: 'w' });
+
+        if(state.userFullNote().accidental && state.userFullNote().accidental !== ''){
+          ghost.addModifier(new VF.Accidental(state.userFullNote().accidental), 0);
+        }
+        ghost.setStyle({ fillStyle: withDark ? '#9aa6b2' : '#6c7a88', strokeStyle: withDark ? '#9aa6b2' : '#6c7a88' });
+        try{ ghost.setGlyphProps({ scale: 0.70 }); }catch(e){}
+
+        // Parentheses via annotations (simple + reliable)
+        try{
+          const leftAnn = new VF.Annotation('(').setFont('Arial', 16, 'bold');
+          leftAnn.setVerticalJustification(VF.Annotation.VerticalJustify.MIDDLE);
+          leftAnn.setJustification(VF.Annotation.Justify.LEFT);
+          ghost.addModifier(leftAnn, 0);
+
+          const rightAnn = new VF.Annotation(')').setFont('Arial', 16, 'bold');
+          rightAnn.setVerticalJustification(VF.Annotation.VerticalJustify.MIDDLE);
+          rightAnn.setJustification(VF.Annotation.Justify.RIGHT);
+          ghost.addModifier(rightAnn, 0);
+        }catch(e){ /* safe ignore */ }
+
+        const voice = new VF.Voice({ num_beats: 4, beat_value: 4 });
+        voice.setStrict(false);
+        voice.addTickables([ghost]);
+        new VF.Formatter().joinVoices([voice]).format([voice], staffW - 40);
+        voice.draw(context, other === 'treble' ? treble : bass);
+      }
+
+      // Colorize SVG group if dark mode requested (some glyphs ignore style)
+      // We rely primarily on VexFlow styles above.
+    }
+
+    try{
+      if(!useLightNotationFallback){
+        notationWrap.classList.remove('notationLight');
+        draw(true);
+      }else{
+        notationWrap.classList.add('notationLight');
+        draw(false);
+      }
+    }catch(e){
+      console.warn('Notation render failed; falling back to light panel.', e);
+      useLightNotationFallback = true;
+      notationWrap.classList.add('notationLight');
+      try{ draw(false); }catch(e2){ console.error('Notation render failed even in fallback.', e2); }
+    }
+  }
+
+  // ---------- Accidental self-test (guardrail) ----------
+  // If any accidental crashes VexFlow in this environment, disable its button and continue.
+  const accidentalOptions = [
+    { id:'bb', label:'♭♭', vex:'bb' },
+    { id:'b', label:'♭', vex:'b' },
+    { id:'', label:'(none)', vex:'' },
+    { id:'n', label:'♮', vex:'n' },
+    { id:'#', label:'♯', vex:'#' },
+    { id:'##', label:'♯♯', vex:'##' },
+  ];
+  const availableAccidentals = new Map(); // id -> true/false
+
+  function accidentalSelfTest(){
+    // hidden scratch renderer
+    const scratch = document.createElement('div');
+    scratch.style.position='fixed';
+    scratch.style.left='-9999px';
+    scratch.style.top='-9999px';
+    scratch.style.width='10px';
+    scratch.style.height='10px';
+    document.body.appendChild(scratch);
+
+    for(const opt of accidentalOptions){
+      if(opt.id === ''){ availableAccidentals.set(opt.id,true); continue; } // none always ok
+      try{
+        scratch.innerHTML = '';
+        const r = new VF.Renderer(scratch, VF.Renderer.Backends.SVG);
+        r.resize(180, 90);
+        const c = r.getContext();
+        const st = new VF.Stave(10, 10, 160);
+        st.addClef('treble');
+        st.setContext(c).draw();
+        // Use a safe key in treble, add accidental as modifier
+        const sn = new VF.StaveNote({ clef:'treble', keys:['c/4'], duration:'q' });
+        sn.addModifier(new VF.Accidental(opt.vex), 0);
+        const v = new VF.Voice({ num_beats:4, beat_value:4 });
+        v.setStrict(false);
+        v.addTickables([sn]);
+        new VF.Formatter().joinVoices([v]).format([v], 120);
+        v.draw(c, st);
+        availableAccidentals.set(opt.id, true);
+      }catch(e){
+        console.warn('Accidental failed:', opt.id, e);
+        availableAccidentals.set(opt.id, false);
+      }
+    }
+
+    document.body.removeChild(scratch);
+
+    // If any failed, show a gentle toast
+    const failed = accidentalOptions.filter(o => o.id !== '' && !availableAccidentals.get(o.id));
+    if(failed.length){
+      showToast('Some accidentals unavailable in this build.');
+    }
+  }
+
+  function buildAccidentalButtons(){
+    accRow.innerHTML = '';
+    for(const opt of accidentalOptions){
+      const b = document.createElement('button');
+      b.className = 'btn secondary accBtn';
+      b.textContent = opt.label;
+      b.dataset.acc = opt.id;
+      // Disable if self-test failed (except none)
+      const ok = availableAccidentals.get(opt.id);
+      if(ok === false) b.disabled = true;
+
+      b.addEventListener('click', () => {
+        if(state.step !== 'B') return;
+        // select accidental: treat 'n' as natural (explicit), '' as none
+        state.userAccidental = opt.id;
+        setAccSelected();
+        updateUI();
+      });
+      accRow.appendChild(b);
+    }
+  }
+
+  function setAccSelected(){
+    const buttons = accRow.querySelectorAll('button');
+    buttons.forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.acc === state.userAccidental);
+    });
+  }
+
+  // ---------- Lesson state ----------
+  // Tutorial order (IMPORTANT): 1,2,3,4,5,6,8,7
+  const tutorialOrder = [1,2,3,4,5,6,8,7];
+
+  const taskTextByPartial = {
+    1: (fundName)=>({ head:`1st partial: place the fundamental`, sub:`Given: ${fundName}. Put it on the staff, then add accidental if needed.` }),
+    2: ()=>({ head:`2nd partial: an octave above the fundamental`, sub:`Generic interval first: octave. Then confirm with half-steps (12).` }),
+    3: ()=>({ head:`3rd partial: a perfect 5th above the 2nd partial`, sub:`Generic 5th first (count staff notes). Then 7 half-steps.` }),
+    4: ()=>({ head:`4th partial: octave above the 2nd partial`, sub:`Two octaves above the fundamental.` }),
+    5: ()=>({ head:`5th partial: major 3rd above the 4th partial`, sub:`Generic 3rd first. Then 4 half-steps.` }),
+    6: ()=>({ head:`6th partial: minor 3rd above the 5th partial`, sub:`Generic 3rd first. Then 3 half-steps. Double-check: same note class as the 3rd partial, one octave higher.` }),
+    7: ()=>({ head:`7th partial: minor 3rd above the 6th partial`, sub:`Generic 3rd first. Then 3 half-steps. Double-check: major 2nd below the 8th partial (count left by 2 half-steps).` }),
+    8: ()=>({ head:`8th partial: octave above the 4th partial`, sub:`Three octaves above the fundamental.` }),
+  };
+
+  const state = {
+    mode: 'tutorial', // 'tutorial' | 'practice'
+    reminders: true,
+
+    // practice streak
+    streak: 0,
+
+    // fundamental note (spelling) & base frequency (equal temperament)
+    fundamental: parseNoteName('B2'),
+
+    // tutorial pointer
+    tutIndex: 0, // index in tutorialOrder
+    // completion store: array of {partial, note:{letter,accidental,octave}, hz}
+    completed: [],
+
+    // current user input
+    userLetter: 'B',
+    userOctave: 2,
+    userAccidental: '',
+
+    // Step control: 'A' or 'B'
+    step: 'A',
+
+    // Half-step tool state
+    hsOpen: false,
+    hsStartMidi: null,
+    hsDir: +1,
+    hsCount: 0,
+    hsMax: 0, // needed half-steps (absolute)
+    hsAllowLeft: false,
+
+    // bonus display
+    showBonus: false,
+    bonusNotes: [],
+
+    // computed target note for current task
+    get currentPartial(){
+      return tutorialOrder[this.tutIndex] || null;
+    },
+
+    userFullNote(){
+      // treat 'n' (natural) as natural sign; for MIDI same as ''.
+      const acc = (this.userAccidental === 'n') ? '' : this.userAccidental;
+      return { letter:this.userLetter, accidental: acc, octave:this.userOctave };
+    },
+
+    resetForFundamental(){
+      this.tutIndex = 0;
+      this.completed = [];
+      this.showBonus = false;
+      this.bonusNotes = [];
+      this.step = 'A';
+      // start user note at fundamental's letter+octave (accidental chosen later)
+      this.userLetter = this.fundamental.letter;
+      this.userOctave = this.fundamental.octave;
+      this.userAccidental = '';
+      this.hsOpen = false;
+      this.resetHalfStepTool();
+    },
+
+    resetHalfStepTool(){
+      this.hsStartMidi = null;
+      this.hsDir = +1;
+      this.hsCount = 0;
+      this.hsMax = 0;
+      this.hsAllowLeft = false;
+      prevHalfBtn.disabled = true;
+      nextHalfBtn.disabled = false;
+    }
+  };
+
+  function fundamentalFrequencyET(){
+    return Tone.Frequency(noteToMidi(state.fundamental), 'midi').toFrequency();
+  }
+
+  function harmonicFrequencyForPartial(partialN){
+    return partialN * fundamentalFrequencyET();
+  }
+
+  function computeTargetsUpTo8(){
+    // Build targets for partials 1..8 based on pedagogy rules, preserving spelling logic:
+    // 1: fundamental
+    // 2: octave above 1
+    // 3: P5 above 2
+    // 4: octave above 2
+    // 5: M3 above 4
+    // 6: m3 above 5 (same note class as 3, one octave higher)
+    // 8: octave above 4
+    // 7: m3 above 6 (M2 below 8)
+    const t = {};
+
+    t[1] = { ...state.fundamental };
+
+    // 2nd: octave (same spelling)
+    t[2] = { letter:t[1].letter, accidental:t[1].accidental, octave:t[1].octave + 1 };
+
+    // 3rd: P5 above 2nd (generic 5th + 7 half-steps)
+    {
+      const start = t[2];
+      const generic = computeGenericTarget(start, 5);
+      const acc = computeSpecificAccidental(start, generic, 7);
+      t[3] = { ...generic, accidental: acc };
+    }
+
+    // 4th: octave above 2nd
+    t[4] = { letter:t[2].letter, accidental:t[2].accidental, octave:t[2].octave + 1 };
+
+    // 5th: M3 above 4th
+    {
+      const start = t[4];
+      const generic = computeGenericTarget(start, 3);
+      const acc = computeSpecificAccidental(start, generic, 4);
+      t[5] = { ...generic, accidental: acc };
+    }
+
+    // 6th: m3 above 5th
+    {
+      const start = t[5];
+      const generic = computeGenericTarget(start, 3);
+      const acc = computeSpecificAccidental(start, generic, 3);
+      t[6] = { ...generic, accidental: acc };
+    }
+
+    // 8th: octave above 4th
+    t[8] = { letter:t[4].letter, accidental:t[4].accidental, octave:t[4].octave + 1 };
+
+    // 7th: m3 above 6th
+    {
+      const start = t[6];
+      const generic = computeGenericTarget(start, 3);
+      const acc = computeSpecificAccidental(start, generic, 3);
+      t[7] = { ...generic, accidental: acc };
+    }
+
+    return t;
+  }
+
+  function currentTarget(){
+    const targets = computeTargetsUpTo8();
+    return targets[state.currentPartial];
+  }
+
+  function currentTargetMidi(){
+    const t = currentTarget();
+    return noteToMidi(t);
+  }
+
+  function currentTargetCents(){
+    const p = state.currentPartial;
+    const harm = harmonicFrequencyForPartial(p);
+    const et = Tone.Frequency(currentTargetMidi(), 'midi').toFrequency();
+    return centsBetween(harm, et);
+  }
+
+  function buildBonusNotes9to16(){
+    // After completing 1–8: display 9–16 as small gray stemless notes.
+    // We map each harmonic frequency to nearest equal-tempered pitch for display (no interaction).
+    const list = [];
+    for(let n=9;n<=16;n++){
+      const hz = harmonicFrequencyForPartial(n);
+      const midi = Math.round(Tone.Frequency(hz).toMidi());
+      // display as sharp names, then parse to note object
+      const name = midiToSharpName(midi);
+      const parsed = parseNoteName(name.replace(/([A-G])(#?)(-?\d+)/, (m, L, acc, oct)=>`${L}${acc}${oct}`));
+      // parsed.accidental will be '#' or '' only
+      if(parsed){
+        list.push(parsed);
+      }
+    }
+    state.bonusNotes = list;
+  }
+
+  // ---------- Step gating / UI logic ----------
+  function setStatus(kind, msg){
+    statusBox.classList.remove('good','warn','bad');
+    if(kind) statusBox.classList.add(kind);
+    statusBox.textContent = msg;
+  }
+
+  function setStepA(){
+    state.step = 'A';
+    // accidental selection disabled until Step A correct
+    halfStepToggleBtn.disabled = true;
+    submitBtn.disabled = true;
+    state.hsOpen = false;
+    halfStepPanel.classList.remove('open');
+    state.resetHalfStepTool();
+  }
+
+  function setStepB(){
+    state.step = 'B';
+    halfStepToggleBtn.disabled = false;
+    submitBtn.disabled = false;
+    // initialize half-step tool start midi for this partial
+    state.resetHalfStepTool();
+    const start = referenceStartNoteForHalfStep();
+    state.hsStartMidi = noteToMidi(start);
+    // needed half-steps depends on partial instruction:
+    state.hsMax = neededHalfStepsForPartial();
+    state.hsAllowLeft = (state.currentPartial === 7); // only explicitly needed for 7th partial double-check
+    prevHalfBtn.disabled = !state.hsAllowLeft;
+    hsNote.innerHTML = `Start key is labeled <strong>0</strong> but not counted or lit.`;
+  }
+
+  function referenceStartNoteForHalfStep(){
+    // For Step B we check half-steps from a reference:
+    // - For 2nd partial: from fundamental up 12
+    // - For 3rd partial: from 2nd partial up 7
+    // - For 4th partial: from 2nd partial up 12
+    // - For 5th partial: from 4th partial up 4
+    // - For 6th partial: from 5th partial up 3
+    // - For 8th partial: from 4th partial up 12
+    // - For 7th partial: from 6th partial up 3 (and optionally left check from 8th down 2)
+    const targets = computeTargetsUpTo8();
+    const p = state.currentPartial;
+    if(p === 1) return targets[1]; // fundamental itself
+    if(p === 2) return targets[1];
+    if(p === 3) return targets[2];
+    if(p === 4) return targets[2];
+    if(p === 5) return targets[4];
+    if(p === 6) return targets[5];
+    if(p === 8) return targets[4];
+    if(p === 7) return targets[6];
+    return targets[1];
+  }
+
+  function neededHalfStepsForPartial(){
+    const p = state.currentPartial;
+    if(p === 1) return 0;  // accidental check only (no forced count)
+    if(p === 2) return 12;
+    if(p === 3) return 7;
+    if(p === 4) return 12;
+    if(p === 5) return 4;
+    if(p === 6) return 3;
+    if(p === 8) return 12;
+    if(p === 7) return 3;
+    return 0;
+  }
+
+  function updateTaskText(){
+    const p = state.currentPartial;
+    currentPartialText.textContent = formatPartialOrdinal(p);
+    const fName = formatNote(state.fundamental);
+
+    const info = taskTextByPartial[p] ? taskTextByPartial[p](fName) : { head:'', sub:'' };
+    taskHeadline.textContent = info.head;
+    taskSubline.textContent = info.sub;
+
+    // Generic hint: emphasize "generic then specific"
+    let generic = '';
+    if(p === 1) generic = `Given: ${fName}. Put the note on the staff (letter + octave).`;
+    else if(p === 2) generic = `Generic interval first: octave above the fundamental.`;
+    else if(p === 3) generic = `Generic interval first: a 5th above the 2nd partial (count staff notes, include start as 1).`;
+    else if(p === 4) generic = `Generic interval first: octave above the 2nd partial.`;
+    else if(p === 5) generic = `Generic interval first: a 3rd above the 4th partial.`;
+    else if(p === 6) generic = `Generic interval first: a 3rd above the 5th partial.`;
+    else if(p === 8) generic = `Generic interval first: octave above the 4th partial.`;
+    else if(p === 7) generic = `Generic interval first: a 3rd above the 6th partial.`;
+    genericHint.innerHTML = `${generic}<br><span class="mini">Staff counting: INCLUDE the starting note as <strong>1</strong>.</span>`;
+  }
+
+  function updateCentsBadge(){
+    const cents = currentTargetCents();
+    const rounded = Math.round(cents);
+    const sign = rounded>0 ? '+' : '';
+    centsBadge.textContent = `${sign}${rounded}¢`;
+  }
+
+  function updateUserNoteText(){
+    // show user spelling as letter + accidental + octave (even if accidental empty)
+    const accDisplay = (state.step === 'A') ? '' : (state.userAccidental || '');
+    const noteObj = { letter: state.userLetter, accidental: (accDisplay==='n'?'':accDisplay), octave: state.userOctave };
+    userNoteText.textContent = formatNote(noteObj);
+  }
+
+  function stepAIsCorrect(){
+    const t = currentTarget();
+    return (state.userLetter === t.letter && state.userOctave === t.octave);
+  }
+
+  function setStepFromCorrectness(){
+    if(stepAIsCorrect()){
+      // lock Step A movement, enable Step B
+      upBtn.disabled = true;
+      downBtn.disabled = true;
+      if(state.step !== 'B') setStepB();
+      setStatus('good', 'Nice. Now add accidental if needed (use the half-step check if you want).');
+    }else{
+      upBtn.disabled = false;
+      downBtn.disabled = false;
+      if(state.step !== 'A') setStepA();
+
+      // Special feedback: correct letter wrong octave (only required explicitly for fundamental, but helpful always)
+      const t = currentTarget();
+      if(state.userLetter === t.letter && state.userOctave !== t.octave){
+        setStatus('warn', 'Correct note name, wrong octave—move it up/down one octave.');
+      }else{
+        setStatus(null, 'Move the note to the right line/space. Then you can add accidentals.');
+      }
+    }
+  }
+
+  function accidentalMatchesTarget(){
+    const t = currentTarget();
+    // UI accidental 'n' means natural sign; treat as '' for pitch
+    const chosenAcc = (state.userAccidental === 'n') ? '' : (state.userAccidental || '');
+    // Compare to target accidental exactly (spelling enforcement)
+    return chosenAcc === (t.accidental || '');
+  }
+
+  function finalPitchMatchesTarget(){
+    const user = { letter: state.userLetter, accidental: (state.userAccidental==='n'?'':state.userAccidental||''), octave: state.userOctave };
+    return noteToMidi(user) === currentTargetMidi();
+  }
+
+  function renderAll(){
+    renderNotation(state);
+    // highlight current user pitch on keyboard (equal-tempered)
+    highlightKeyboardMidi(noteToMidi(state.userFullNote()), 'keyHi');
+  }
+
+  function updateCompletedList(){
+    completedList.innerHTML = '';
+    if(state.completed.length === 0){
+      const div = document.createElement('div');
+      div.className = 'mini';
+      div.textContent = 'No partials completed yet.';
+      completedList.appendChild(div);
+      return;
+    }
+
+    // Keep compact list aligned by partial number
+    const sorted = [...state.completed].sort((a,b)=>a.partial-b.partial);
+    for(const item of sorted){
+      const li = document.createElement('div');
+      li.className = 'listItem';
+      const left = document.createElement('div');
+      left.className = 'left';
+      const p = document.createElement('div');
+      p.className = 'pnum';
+      p.textContent = formatPartialOrdinal(item.partial);
+      const n = document.createElement('div');
+      n.className = 'note mono';
+      n.textContent = formatNote(item.note);
+      left.appendChild(p);
+      left.appendChild(n);
+
+      const hz = document.createElement('div');
+      hz.className = 'hz mono';
+      hz.textContent = `${item.hz.toFixed(2)} Hz`;
+
+      li.appendChild(left);
+      li.appendChild(hz);
+      completedList.appendChild(li);
+    }
+  }
+
+  function updateRemindersUI(){
+    remindersLabel.textContent = state.reminders ? 'ON' : 'OFF';
+    hsCheat.style.display = state.reminders ? 'inline-flex' : 'none';
+  }
+
+  // ---------- Half-step check tool ----------
+  function openHalfStepPanel(open){
+    state.hsOpen = open;
+    halfStepPanel.classList.toggle('open', open);
+    if(open){
+      resetHalfStep();
+    }else{
+      clearKeyboardHighlights();
+      highlightKeyboardMidi(noteToMidi(state.userFullNote()), 'keyHi');
+    }
+  }
+
+  function resetHalfStep(){
+    // Start at 0 (start key labeled but not lit)
+    state.hsCount = 0;
+    clearKeyboardHighlights();
+
+    // Start key label only (not lit)
+    const startMidi = state.hsStartMidi;
+    const startDiv = keyDivsByMidi.get(startMidi);
+    if(startDiv){
+      // add a "0" badge (not lit)
+      if(state.reminders){
+        const badge = document.createElement('div');
+        badge.className = 'stepBadge';
+        badge.textContent = '0';
+        startDiv.appendChild(badge);
+      }
+      // Do not add keyStep class -> not lit
+      startDiv.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+    }
+
+    // Ensure current user note highlight remains visible elsewhere? We keep only tool info while open.
+    hsNote.innerHTML = `Start key is labeled <strong>0</strong> but not counted or lit.`;
+    nextHalfBtn.disabled = false;
+    prevHalfBtn.disabled = !state.hsAllowLeft;
+  }
+
+  function stepHalf(dir){
+    // dir: +1 right, -1 left
+    const startMidi = state.hsStartMidi;
+    if(startMidi === null) return;
+
+    // Update count (DO NOT include starting key)
+    const newCount = state.hsCount + 1;
+    const needed = state.hsMax;
+
+    // Compute new midi
+    const newMidi = startMidi + dir*newCount;
+
+    // Clear previous step highlights but keep 0 badge if reminders on
+    clearKeyboardHighlights();
+    // Re-add start "0" badge without lighting
+    const sDiv = keyDivsByMidi.get(startMidi);
+    if(sDiv && state.reminders){
+      const badge = document.createElement('div');
+      badge.className = 'stepBadge';
+      badge.textContent = '0';
+      sDiv.appendChild(badge);
+    }
+
+    // Mark the step key
+    const label = state.reminders ? newCount : null;
+    markHalfStepMidi(newMidi, label);
+
+    // Keep in view
+    const d = keyDivsByMidi.get(newMidi);
+    if(d) d.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+
+    state.hsCount = newCount;
+
+    // Disable next if reached needed (we avoid showing "answer" permanently; brief flash is OK)
+    if(needed > 0 && newCount >= needed){
+      nextHalfBtn.disabled = true;
+      prevHalfBtn.disabled = !state.hsAllowLeft;
+
+      // Brief flash at end (does not permanently "answer")
+      const flashMidi = newMidi;
+      setTimeout(() => {
+        const div = keyDivsByMidi.get(flashMidi);
+        if(div){
+          div.classList.remove('keyStep');
+          void div.offsetWidth; // reflow
+          div.classList.add('keyStep');
+        }
+      }, 80);
+
+      hsNote.innerHTML = `You counted to <strong>${needed}</strong>. Now choose the accidental and submit.`;
+    }else{
+      nextHalfBtn.disabled = false;
+      prevHalfBtn.disabled = !state.hsAllowLeft;
+    }
+  }
+
+  // ---------- Submission / progression ----------
+  function completeCurrentPartial(){
+    const p = state.currentPartial;
+    const t = currentTarget();
+    const hz = harmonicFrequencyForPartial(p);
+
+    // Store completion (Hz only after completion)
+    const existing = state.completed.find(x => x.partial === p);
+    if(!existing){
+      state.completed.push({ partial:p, note:{...t}, hz });
+    }
+
+    updateCompletedList();
+
+    // Advance tutorial
+    state.tutIndex += 1;
+
+    if(state.tutIndex >= tutorialOrder.length){
+      // finished 1–8
+      state.showBonus = true;
+      buildBonusNotes9to16();
+      afterFinishNote.style.display = 'block';
+      setStatus('good', 'Finished 1–8. Nice work. (Bonus partials 9–16 are now displayed on the staff.)');
+
+      // Disable task controls
+      upBtn.disabled = true;
+      downBtn.disabled = true;
+      submitBtn.disabled = true;
+      halfStepToggleBtn.disabled = true;
+      accRow.querySelectorAll('button').forEach(b => b.disabled = true);
+      openHalfStepPanel(false);
+    }else{
+      // Prepare next task: set user note to a reasonable starting place (previous correct note)
+      // Start near last completed note (letter/octave) to reduce scrolling.
+      state.userLetter = t.letter;
+      state.userOctave = t.octave;
+      state.userAccidental = '';
+      setAccSelected();
+      setStepA();
+      updateTaskText();
+      updateCentsBadge();
+      setStatus(null, 'Next partial: move the note to the right line/space.');
+      // Ensure accidental buttons re-enabled (respecting self-test failures)
+      accRow.querySelectorAll('button').forEach(b => {
+        const acc = b.dataset.acc;
+        const ok = availableAccidentals.get(acc);
+        b.disabled = (state.step !== 'B') || (ok === false);
+      });
+    }
+
+    updateUI();
+  }
+
+  function submit(){
+    if(state.step !== 'B') return;
+
+    const t = currentTarget();
+
+    // Enforce spelling before pitch:
+    // - Step A already enforces letter+octave
+    // - Here enforce accidental spelling (enharmonic enforcement)
+    const chosenAcc = (state.userAccidental === 'n') ? '' : (state.userAccidental || '');
+
+    // If pitch matches but accidental spelling doesn't (rare here), show enharmonic warning
+    const userObj = { letter: state.userLetter, accidental: chosenAcc, octave: state.userOctave };
+    const userMidi = noteToMidi(userObj);
+    const tgtMidi = noteToMidi(t);
+
+    if(userMidi === tgtMidi && chosenAcc !== (t.accidental || '')){
+      // This is the requested enharmonic warning style
+      setStatus('warn', `Enharmonic warning: right pitch, wrong spelling. The generic interval must be a ${requiredGenericLabel()}, so the letter name must be ${t.letter}. Fix the spelling.`);
+      return;
+    }
+
+    if(chosenAcc !== (t.accidental || '')){
+      setStatus('bad', 'Not quite. Try a different accidental (use the half-step check if needed).');
+      return;
+    }
+
+    // Final check
+    if(userMidi !== tgtMidi){
+      setStatus('bad', 'Pitch is not correct yet. Re-check half-steps, then try again.');
+      return;
+    }
+
+    // Success
+    setStatus('good', 'Correct! Partial completed.');
+    if(state.mode === 'practice'){
+      state.streak += 1;
+      streakEl.textContent = String(state.streak);
+    }
+    completeCurrentPartial();
+  }
+
+  function requiredGenericLabel(){
+    // Used in enharmonic warning message
+    const p = state.currentPartial;
+    if(p === 2 || p === 4 || p === 8) return 'octave';
+    if(p === 3) return '5th';
+    if(p === 5 || p === 6 || p === 7) return '3rd';
+    return 'note';
+  }
+
+  // ---------- Practice mode fundamentals ----------
+  function buildFundamentalOptions(){
+    // Fundamentals between F1 and F4 inclusive (chromatic), with sharp spelling.
+    // We'll present as note names; user can choose any.
+    const options = [];
+    const start = noteToMidi(parseNoteName('F1'));
+    const end = noteToMidi(parseNoteName('F4'));
+    for(let midi=start; midi<=end; midi++){
+      options.push(midiToSharpName(midi));
+    }
+    fundSelect.innerHTML = '';
+    options.forEach(name=>{
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      fundSelect.appendChild(opt);
+    });
+  }
+
+  function randomFundamental(){
+    // Mostly between C2 and B3 (bias)
+    const low = noteToMidi(parseNoteName('C2'));
+    const high = noteToMidi(parseNoteName('B3'));
+    const midi = Math.round(low + Math.random()*(high-low));
+    const name = midiToSharpName(midi);
+    return parseNoteName(name);
+  }
+
+  function setFundamental(noteObj){
+    state.fundamental = { ...noteObj };
+    fundamentalText.textContent = formatNote(state.fundamental);
+    state.resetForFundamental();
+    updateTaskText();
+    updateCentsBadge();
+    updateCompletedList();
+
+    // practice default reminders OFF
+    if(state.mode === 'practice'){
+      state.reminders = false;
+      remindersToggle.checked = false;
+      updateRemindersUI();
+    }
+    updateUI();
+  }
+
+  // ---------- UI updates ----------
+  function updateAccButtonsEnabled(){
+    const buttons = accRow.querySelectorAll('button');
+    buttons.forEach(b => {
+      const acc = b.dataset.acc;
+      const ok = availableAccidentals.get(acc);
+      if(state.tutIndex >= tutorialOrder.length){
+        b.disabled = true;
+      }else{
+        b.disabled = (state.step !== 'B') || (ok === false);
+      }
+    });
+  }
+
+  function updateUI(){
+    // mode
+    practiceControls.style.display = (state.mode === 'practice') ? 'block' : 'none';
+
+    // reminders
+    updateRemindersUI();
+
+    // text + cents
+    fundamentalText.textContent = formatNote(state.fundamental);
+    if(state.tutIndex < tutorialOrder.length){
+      updateTaskText();
+      updateCentsBadge();
+    }else{
+      currentPartialText.textContent = '—';
+      centsBadge.textContent = '—';
+    }
+
+    // current user note display
+    updateUserNoteText();
+    setAccSelected();
+
+    // Step gating
+    if(state.tutIndex < tutorialOrder.length){
+      setStepFromCorrectness();
+      updateAccButtonsEnabled();
+      halfStepToggleBtn.disabled = (state.step !== 'B');
+      submitBtn.disabled = (state.step !== 'B');
+    }
+
+    // half-step panel + cheat hint
+    hsCheat.style.display = (state.reminders && state.step === 'B') ? 'inline-flex' : 'none';
+
+    // render notation + keyboard highlight
+    renderAll();
+  }
+
+  // ---------- Event handlers ----------
+  enableAudioBtn.addEventListener('click', enableAudio);
+
+  helpBtn.addEventListener('click', ()=> helpModal.classList.add('open'));
+  closeHelp.addEventListener('click', ()=> helpModal.classList.remove('open'));
+  helpModal.addEventListener('click', (e)=>{ if(e.target === helpModal) helpModal.classList.remove('open'); });
+
+  remindersToggle.addEventListener('change', ()=>{
+    state.reminders = remindersToggle.checked;
+    updateRemindersUI();
+    // If half-step panel open, re-render badges
+    if(state.hsOpen) resetHalfStep();
+    updateUI();
+  });
+
+  practiceToggle.addEventListener('change', ()=>{
+    state.mode = practiceToggle.checked ? 'practice' : 'tutorial';
+
+    if(state.mode === 'practice'){
+      // Reminders default OFF in practice
+      state.reminders = false;
+      remindersToggle.checked = false;
+      updateRemindersUI();
+      state.streak = 0;
+      streakEl.textContent = '0';
+      // set fundamental to selection if any
+      const n = parseNoteName(fundSelect.value || 'C3') || randomFundamental();
+      setFundamental(n);
+    }else{
+      // Back to tutorial default: reminders ON
+      state.reminders = true;
+      remindersToggle.checked = true;
+      updateRemindersUI();
+      // tutorial default fundamental: B2
+      setFundamental(parseNoteName('B2'));
+    }
+    updateUI();
+  });
+
+  fundSelect.addEventListener('change', ()=>{
+    if(state.mode !== 'practice') return;
+    const n = parseNoteName(fundSelect.value);
+    if(n) setFundamental(n);
+  });
+
+  randomFundBtn.addEventListener('click', ()=>{
+    if(state.mode !== 'practice') return;
+    const n = randomFundamental();
+    // update select UI
+    const name = formatNote(n).replace('##','##').replace('bb','bb');
+    // fundSelect uses sharp naming like "F#2" without double accidentals; still set by value if exists
+    fundSelect.value = midiToSharpName(noteToMidi(n));
+    setFundamental(n);
+  });
+
+  upBtn.addEventListener('click', ()=>{
+    if(state.step !== 'A') return;
+    const next = diatonicStep({ letter: state.userLetter, octave: state.userOctave }, +1);
+    state.userLetter = next.letter;
+    state.userOctave = next.octave;
+    updateUI();
+  });
+
+  downBtn.addEventListener('click', ()=>{
+    if(state.step !== 'A') return;
+    const next = diatonicStep({ letter: state.userLetter, octave: state.userOctave }, -1);
+    state.userLetter = next.letter;
+    state.userOctave = next.octave;
+    updateUI();
+  });
+
+  halfStepToggleBtn.addEventListener('click', ()=>{
+    if(state.step !== 'B') return;
+    openHalfStepPanel(!state.hsOpen);
+  });
+
+  nextHalfBtn.addEventListener('click', ()=>{
+    if(!state.hsOpen) return;
+    stepHalf(+1);
+  });
+
+  prevHalfBtn.addEventListener('click', ()=>{
+    if(!state.hsOpen) return;
+    if(!state.hsAllowLeft) return;
+    // For the 7th partial: support counting LEFT for the double-check (M2 below 8th)
+    // When the student wants the left-check, we reset and count left from the 8th partial.
+    // This keeps the rule clear: don't count start key; next key left is 1.
+    if(state.currentPartial !== 7){
+      stepHalf(-1);
+      return;
+    }
+
+    // Special: if user presses Prev, we interpret it as "let me check M2 below the 8th partial".
+    // Start = 8th partial, needed = 2, direction = -1.
+    const targets = computeTargetsUpTo8();
+    state.hsStartMidi = noteToMidi(targets[8]);
+    state.hsMax = 2;
+    resetHalfStep();
+    // Now perform first left step
+    stepHalf(-1);
+    // And allow continued left steps via Prev
+    prevHalfBtn.disabled = false;
+    // Replace Prev button behavior to continue left steps for this check
+    prevHalfBtn.onclick = ()=>{
+      if(!state.hsOpen) return;
+      if(state.hsCount >= state.hsMax) return;
+      stepHalf(-1);
+    };
+    // Disable Next in this left-check context (keep it simple)
+    nextHalfBtn.disabled = true;
+
+    hsNote.innerHTML = `Left-check for the <strong>7th partial</strong>: start at the <strong>8th partial</strong>, then count <strong>2</strong> half-steps left (don’t count the start key).`;
+  });
+
+  resetHalfBtn.addEventListener('click', ()=>{
+    if(!state.hsOpen) return;
+    // restore default Prev behavior
+    prevHalfBtn.onclick = null;
+    nextHalfBtn.disabled = false;
+    // restore reference start for the main Step B check
+    state.hsStartMidi = noteToMidi(referenceStartNoteForHalfStep());
+    state.hsMax = neededHalfStepsForPartial();
+    state.hsAllowLeft = (state.currentPartial === 7);
+    prevHalfBtn.disabled = !state.hsAllowLeft;
+    resetHalfStep();
+  });
+
+  submitBtn.addEventListener('click', submit);
+
+  playFundBtn.addEventListener('click', ()=>{
+    const f0 = fundamentalFrequencyET();
+    playFreq(f0, 0.9, false);
+  });
+
+  playSeriesBtn.addEventListener('click', ()=>{
+    // Play partials 1..current tutorial partial (or 1..8 if finished)
+    const maxP = (state.tutIndex >= tutorialOrder.length) ? 8 : state.currentPartial;
+    const startTime = Tone.now();
+    let t = 0;
+    for(let p=1;p<=maxP;p++){
+      const hz = harmonicFrequencyForPartial(p);
+      // schedule short notes, gentle to ears
+      const dur = 0.38;
+      try{
+        synth.triggerAttackRelease(hz, dur, startTime + t);
+      }catch(e){
+        // If synth not ready, ignore
+      }
+      t += 0.42;
+    }
+  });
+
+  // ---------- Initialization ----------
+  function boot(){
+    buildKeyboard();
+    accidentalSelfTest();
+    buildAccidentalButtons();
+    buildFundamentalOptions();
+
+    // Tutorial defaults
+    state.mode = 'tutorial';
+    state.reminders = true;
+    remindersToggle.checked = true;
+    practiceToggle.checked = false;
+
+    setFundamental(parseNoteName('B2'));
+
+    // Responsive VexFlow
+    window.addEventListener('resize', ()=>{
+      resizeVexflow();
+      renderAll();
+    });
+
+    // start with Step A
+    setStepA();
+    updateUI();
+  }
+
+  boot();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,2168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Harmonic Series: Staff + Keyboard Builder</title>
+
+  <!-- VexFlow (notation) -->
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.5/build/cjs/vexflow.js"></script>
+  <!-- Tone.js (audio) -->
+  <script src="https://cdn.jsdelivr.net/npm/tone@14.8.49/build/Tone.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0c10;
+      --card:#121422;
+      --card2:#151832;
+      --muted:#98a2b3;
+      --text:#e6e8ef;
+      --accent:#7c8cff;
+      --good:#3ddc97;
+      --warn:#ffb020;
+      --bad:#ff5c7a;
+      --line:#262a44;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 16px;
+      --tap: 44px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      background: radial-gradient(1200px 700px at 20% -20%, rgba(124,140,255,.22), transparent 45%),
+                  radial-gradient(800px 600px at 95% 0%, rgba(61,220,151,.10), transparent 40%),
+                  var(--bg);
+      color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 14px 90px;
+    }
+    header{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 10px;
+    }
+    .topRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .titleBlock{
+      min-width: 260px;
+      flex: 1;
+    }
+    h1{
+      font-size: 18px;
+      line-height: 1.1;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .sub{
+      margin:6px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+      line-height:1.35;
+      max-width: 52ch;
+    }
+    .pillRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .pill{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size: 12px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      box-shadow: 0 2px 0 rgba(0,0,0,.15);
+      user-select:none;
+    }
+    .pill strong{font-weight:600}
+    .pill .tiny{
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+
+    /* Layout: mobile-first vertical stacking */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .section{
+      padding: 12px;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    .modeBar{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .seg{
+      display:flex;
+      border:1px solid var(--line);
+      border-radius: 999px;
+      overflow:hidden;
+      background: rgba(0,0,0,.2);
+    }
+    .seg button{
+      border:0;
+      background: transparent;
+      color: var(--muted);
+      padding: 10px 12px;
+      font-size: 13px;
+      cursor:pointer;
+      min-height: var(--tap);
+    }
+    .seg button[aria-pressed="true"]{
+      background: rgba(124,140,255,.18);
+      color: var(--text);
+    }
+    .seg button:focus-visible{outline: 3px solid rgba(124,140,255,.45); outline-offset: 2px}
+
+    .selectRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .selectRow .left{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    select{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-height: var(--tap);
+      font-size: 13px;
+    }
+    select:focus-visible{outline: 3px solid rgba(124,140,255,.45); outline-offset: 2px}
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-height: var(--tap);
+      font-size: 13px;
+      cursor:pointer;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      justify-content:center;
+      user-select:none;
+    }
+    .btn:hover{background: rgba(255,255,255,.06)}
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{
+      border-color: rgba(124,140,255,.55);
+      background: rgba(124,140,255,.18);
+    }
+    .btn.good{
+      border-color: rgba(61,220,151,.55);
+      background: rgba(61,220,151,.12);
+    }
+    .btn.warn{
+      border-color: rgba(255,176,32,.55);
+      background: rgba(255,176,32,.12);
+    }
+    .btn.bad{
+      border-color: rgba(255,92,122,.55);
+      background: rgba(255,92,122,.12);
+    }
+    .btn:focus-visible{outline: 3px solid rgba(124,140,255,.45); outline-offset: 2px}
+
+    .mini{
+      font-size:12px;
+      color: var(--muted);
+      line-height:1.35;
+    }
+
+    /* Notation area */
+    .notationHeader{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      justify-content:space-between;
+      border-bottom: 1px solid var(--line);
+      padding: 12px;
+      background: rgba(0,0,0,.15);
+    }
+    .stepTitle{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width: 220px;
+      flex: 1;
+    }
+    .stepTitle .kicker{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .badge{
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+    }
+    .badge.good{border-color: rgba(61,220,151,.55)}
+    .badge.warn{border-color: rgba(255,176,32,.55)}
+    .badge.bad{border-color: rgba(255,92,122,.55)}
+    .badge strong{font-weight:600}
+    .badge .dot{
+      width:8px; height:8px; border-radius:50%;
+      background: var(--muted);
+      display:inline-block;
+    }
+
+    #vfWrap{
+      padding: 10px 10px 14px;
+    }
+    #vf{
+      width: 100%;
+      height: 180px;
+      border-radius: 14px;
+      background: radial-gradient(900px 180px at 20% 0%, rgba(124,140,255,.10), transparent 55%),
+                  rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.06);
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* Entry controls */
+    .entryGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .controls{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      align-items:stretch;
+    }
+    .noteLine{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      gap:10px;
+      justify-content:space-between;
+    }
+    .noteReadout{
+      font-family: var(--mono);
+      font-size: 15px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-height: var(--tap);
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .noteReadout .label{color: var(--muted); font-size: 12px}
+    .noteReadout .big{font-weight:700}
+    .stepper{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+    .stepper .btn{
+      width: var(--tap);
+      padding:0;
+      font-size: 18px;
+      line-height:1;
+    }
+
+    .accRow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .accRow .acc{
+      min-width: 56px;
+      justify-content:center;
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+    .accRow .acc[aria-pressed="true"]{
+      border-color: rgba(124,140,255,.55);
+      background: rgba(124,140,255,.20);
+    }
+
+    .feedback{
+      border-top: 1px solid var(--line);
+      padding: 12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      background: rgba(0,0,0,.12);
+    }
+    .msg{
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.03);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .msg.good{border-color: rgba(61,220,151,.55); background: rgba(61,220,151,.10)}
+    .msg.warn{border-color: rgba(255,176,32,.55); background: rgba(255,176,32,.10)}
+    .msg.bad{border-color: rgba(255,92,122,.55); background: rgba(255,92,122,.10)}
+    .msg .mono{font-family: var(--mono)}
+    .tinyActions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    /* Keyboard overlay tool */
+    .overlay{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:flex-end;
+      justify-content:center;
+      padding: 14px;
+      z-index: 999;
+    }
+    .overlay[aria-hidden="false"]{display:flex}
+    .sheet{
+      width:min(980px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 20px 70px rgba(0,0,0,.5);
+      overflow:hidden;
+    }
+    .sheetHeader{
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.20);
+    }
+    .sheetHeader .title{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      min-width: 220px;
+    }
+    .sheetHeader .title strong{font-size: 14px}
+    .sheetHeader .title span{font-size: 12px; color: var(--muted)}
+    .kbdWrap{
+      position:relative;
+      padding: 12px 12px 16px;
+      background: rgba(0,0,0,.15);
+    }
+    .kbdScroller{
+      overflow-x:auto;
+      overflow-y:hidden;
+      -webkit-overflow-scrolling:touch;
+      padding-bottom: 8px;
+      scrollbar-width: thin;
+    }
+    .kbdScroller::-webkit-scrollbar{height:10px}
+    .kbdScroller::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,.12);
+      border-radius:999px;
+    }
+    .fadeEdge{
+      position:absolute;
+      top: 12px;
+      bottom: 16px;
+      width: 28px;
+      pointer-events:none;
+      z-index: 2;
+    }
+    .fadeEdge.left{
+      left:12px;
+      background: linear-gradient(90deg, rgba(11,12,16,.95), rgba(11,12,16,0));
+      border-radius: 14px 0 0 14px;
+    }
+    .fadeEdge.right{
+      right:12px;
+      background: linear-gradient(270deg, rgba(11,12,16,.95), rgba(11,12,16,0));
+      border-radius: 0 14px 14px 0;
+    }
+
+    .keyboard{
+      position:relative;
+      height: 140px;
+      min-width: 860px; /* scroll hint on mobile */
+      display:flex;
+      align-items:flex-end;
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 14px;
+      background: rgba(255,255,255,.02);
+      padding: 10px;
+      gap: 2px;
+    }
+    .key{
+      position:relative;
+      flex: 1 0 auto;
+      width: 34px;
+      height: 110px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.92);
+      cursor:pointer;
+      display:flex;
+      align-items:flex-end;
+      justify-content:center;
+      user-select:none;
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,.08);
+      outline:none;
+    }
+    .key:focus-visible{outline: 3px solid rgba(124,140,255,.55); outline-offset: 2px}
+    .key.black{
+      height: 70px;
+      background: rgba(30,32,45,.92);
+      border-color: rgba(255,255,255,.10);
+      margin-left: -18px;
+      margin-right: -18px;
+      z-index: 1;
+      width: 28px;
+      border-radius: 10px;
+      box-shadow: inset 0 -2px 0 rgba(255,255,255,.05);
+    }
+    .key .cmark{
+      position:absolute;
+      top: -14px;
+      font-size: 11px;
+      color: rgba(152,162,179,.7);
+      font-family: var(--mono);
+    }
+    .key .count{
+      position:absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 26px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      font-size: 12px;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      font-family: var(--mono);
+      border: 1px solid rgba(0,0,0,.25);
+      background: rgba(255,255,255,.85);
+      color: rgba(0,0,0,.8);
+    }
+    .key.black .count{
+      border-color: rgba(255,255,255,.25);
+      background: rgba(255,255,255,.12);
+      color: rgba(255,255,255,.85);
+    }
+    .key .startLabel{
+      position:absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      display:none;
+      font-family: var(--mono);
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.25);
+      color: rgba(255,255,255,.9);
+      white-space:nowrap;
+    }
+    .key.target{
+      outline: 4px solid rgba(61,220,151,.65);
+      outline-offset: -2px;
+      box-shadow: inset 0 0 0 2px rgba(61,220,151,.45);
+    }
+    .key.black.target{
+      outline-offset: 0px;
+    }
+    .kbdFooter{
+      padding: 12px;
+      border-top: 1px solid var(--line);
+      background: rgba(0,0,0,.20);
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .kbdFooter .hint{
+      font-size: 12px;
+      color: var(--muted);
+      line-height:1.35;
+      max-width: 68ch;
+    }
+
+    /* Help modal */
+    .modal{
+      position:fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 14px;
+      z-index: 1000;
+    }
+    .modal[aria-hidden="false"]{display:flex}
+    .modalCard{
+      width: min(560px, 100%);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: 0 20px 70px rgba(0,0,0,.5);
+      overflow:hidden;
+    }
+    .modalHeader{
+      padding: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.20);
+    }
+    .modalHeader strong{font-size: 14px}
+    .modalBody{
+      padding: 12px;
+      color: var(--text);
+      font-size: 13px;
+      line-height:1.45;
+    }
+    .modalBody .linkRow{
+      margin-top: 10px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    /* Larger screens: put entry + feedback side by side */
+    @media (min-width: 860px){
+      .grid{grid-template-columns: 1.1fr .9fr}
+      .entryGrid{grid-template-columns: 1fr}
+      .controls{grid-template-columns: 1fr}
+    }
+
+    /* Bottom fixed action bar (mobile-friendly) */
+    .bottomBar{
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      padding: 10px 12px;
+      background: rgba(11,12,16,.78);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid rgba(255,255,255,.06);
+      z-index: 100;
+    }
+    .bottomInner{
+      max-width: 980px;
+      margin: 0 auto;
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .bottomInner .left, .bottomInner .right{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .kbdOnly{
+      display:none;
+    }
+    @media (max-width: 520px){
+      .kbdOnly{display:inline-flex;}
+      .desktopOnly{display:none;}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div class="topRow">
+        <div class="titleBlock">
+          <h1>Harmonic Series: Staff + Keyboard Builder</h1>
+          <p class="sub">
+            Why it matters: periodic waves create <span class="mono">overtones</span> → overtones create <span class="mono">sound color</span>.
+            Here you’ll *write* the nearest 12-TET pitch for each harmonic partial—then see how many cents the real harmonic differs.
+          </p>
+        </div>
+
+        <div class="pillRow">
+          <div class="pill"><strong id="stepCounter">Step 1 / 8</strong> <span class="tiny" id="phasePill">Phase A</span></div>
+          <div class="pill"><span class="tiny">Audio:</span> <strong id="audioState">off</strong></div>
+        </div>
+      </div>
+
+      <div class="card section">
+        <div class="selectRow">
+          <div class="left">
+            <div class="seg" role="group" aria-label="Mode selector">
+              <button id="btnTutorial" aria-pressed="true" title="Guided story">Tutorial</button>
+              <button id="btnPractice" aria-pressed="false" title="Randomized fundamentals">Practice</button>
+            </div>
+
+            <label class="mini" for="tutorialSelect" id="tutorialLabel">Tutorial:</label>
+            <select id="tutorialSelect" aria-label="Tutorial selection">
+              <option value="B">1) B</option>
+              <option value="Eb">2) Eb</option>
+              <option value="C">3) C</option>
+              <option value="Db">4) Db</option>
+            </select>
+
+            <button class="btn" id="btnBonus" title="Extend to partials 9–12">Bonus 9–12</button>
+          </div>
+
+          <div class="row">
+            <button class="btn" id="btnHelp">Help</button>
+            <button class="btn" id="btnResetStep" title="Reset the current step input">Reset Step</button>
+            <button class="btn" id="btnRestart" title="Restart tutorial / practice run">Restart</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px; justify-content:space-between;">
+          <div class="row" style="gap:8px;">
+            <span class="badge" id="partialBadge"><span class="dot"></span><strong>Partial 1</strong> <span class="tiny" id="ratioText">(1:1)</span></span>
+            <span class="badge" id="targetBadge"><span class="dot"></span><strong>Nearest:</strong> <span class="mono" id="nearestText">—</span></span>
+            <span class="badge" id="centsBadge"><span class="dot"></span><strong>Cents:</strong> <span class="mono" id="centsText">—</span></span>
+          </div>
+          <div class="row" style="gap:8px;">
+            <button class="btn" id="btnPlayFund" title="Play fundamental (single sine)">Play Fundamental</button>
+            <button class="btn" id="btnPlayUpTo" title="Play additive sine partials up to current partial">Play Up To Partial</button>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px;">
+          <div class="mini" id="narration"></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Notation panel -->
+      <div class="card">
+        <div class="notationHeader">
+          <div class="stepTitle">
+            <div class="kicker" id="kickerLine">
+              <span class="badge"><strong id="taskType">Generic interval first</strong></span>
+              <span class="mini" id="taskHint">Staff counting includes the first note.</span>
+            </div>
+            <div class="mini" id="doubleCheck"></div>
+          </div>
+          <div class="row">
+            <button class="btn warn" id="btnHalfStepCheck" style="display:none;">Half-step check</button>
+          </div>
+        </div>
+        <div id="vfWrap">
+          <div id="vf" aria-label="Notation panel"></div>
+        </div>
+      </div>
+
+      <!-- Entry + feedback -->
+      <div class="card">
+        <div class="section entryGrid">
+          <div class="noteLine">
+            <div class="noteReadout" aria-live="polite">
+              <span class="label">Your note</span>
+              <span class="big mono" id="yourNote">—</span>
+            </div>
+
+            <div class="stepper" aria-label="Move note by staff steps (line/space)">
+              <button class="btn" id="btnDown" title="Down one staff step">−</button>
+              <button class="btn" id="btnUp" title="Up one staff step">+</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="mini" style="margin-bottom:6px;">Accidental (Phase B only):</div>
+            <div class="accRow" role="group" aria-label="Accidental selector">
+              <button class="btn acc" data-acc="-2" aria-pressed="false">♭♭</button>
+              <button class="btn acc" data-acc="-1" aria-pressed="false">♭</button>
+              <button class="btn acc" data-acc="0" aria-pressed="true">♮/—</button>
+              <button class="btn acc" data-acc="1" aria-pressed="false">♯</button>
+              <button class="btn acc" data-acc="2" aria-pressed="false">♯♯</button>
+            </div>
+          </div>
+
+          <div class="row" style="justify-content:space-between;">
+            <button class="btn primary" id="btnSubmit">Submit Answer</button>
+            <div class="mini" id="practiceStats" style="display:none;"></div>
+          </div>
+        </div>
+
+        <div class="feedback" id="feedbackArea">
+          <div class="msg" id="feedbackMsg">Tap <strong>Submit</strong> when you’re ready. (If audio is blocked, press any play button once.)</div>
+          <div class="tinyActions">
+            <button class="btn desktopOnly" id="btnPrev">◀ Prev</button>
+            <button class="btn good" id="btnNext">Next ▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom action bar (especially handy on mobile) -->
+  <div class="bottomBar">
+    <div class="bottomInner">
+      <div class="left">
+        <button class="btn kbdOnly warn" id="btnHalfStepCheckMobile" style="display:none;">Half-step check</button>
+        <button class="btn" id="btnHelp2">Help</button>
+      </div>
+      <div class="right">
+        <button class="btn" id="btnPlayFund2">Play Fundamental</button>
+        <button class="btn" id="btnPlayUpTo2">Play Up To Partial</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div class="modal" id="helpModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Help">
+    <div class="modalCard">
+      <div class="modalHeader">
+        <strong id="helpTitle">Help</strong>
+        <button class="btn" id="btnCloseHelp">Close</button>
+      </div>
+      <div class="modalBody">
+        <div id="helpText"></div>
+        <div class="linkRow">
+          <a id="helpLink" href="#" target="_blank" rel="noopener noreferrer">More help</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard overlay -->
+  <div class="overlay" id="kbdOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Half-step keyboard tool">
+    <div class="sheet">
+      <div class="sheetHeader">
+        <div class="title">
+          <strong>Half-step check (keyboard counting)</strong>
+          <span>Rule: do <strong>NOT</strong> count the first key. The next key is “1”.</span>
+        </div>
+        <button class="btn" id="btnCloseKbd">Close</button>
+      </div>
+
+      <div class="kbdWrap">
+        <div class="fadeEdge left"></div>
+        <div class="fadeEdge right"></div>
+        <div class="kbdScroller" id="kbdScroller">
+          <div class="keyboard" id="keyboard" aria-label="Compact piano keyboard"></div>
+        </div>
+      </div>
+
+      <div class="kbdFooter">
+        <div class="hint" id="kbdHint">
+          Tap keys to hear a quiet triangle tone. The “Start (0)” key is labeled but not lit.
+          The target key is highlighted at the needed semitone count.
+        </div>
+        <div class="row">
+          <button class="btn" id="btnRecenter">Recenter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /********************************************************************
+     * Harmonic Series: Staff + Keyboard Builder
+     * Single-file, GitHub Pages friendly.
+     *
+     * Pedagogy (critical):
+     * - Phase A: Generic interval (staff counting, includes first note)
+     * - Phase B: Specific interval (keyboard half-steps, excludes first key)
+     * - Enforce spelling: if enharmonic pitch matches but letter-name is wrong,
+     *   require correction (generic interval must match letter-family).
+     ********************************************************************/
+
+    // ----------------------------
+    // Utilities: pitch + notation
+    // ----------------------------
+    const LETTERS = ["C","D","E","F","G","A","B"];
+    const NATURAL_PC = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+
+    function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+    function accToText(acc){
+      if(acc === -2) return "bb";
+      if(acc === -1) return "b";
+      if(acc === 0) return "";
+      if(acc === 1) return "#";
+      if(acc === 2) return "##";
+      return "";
+    }
+
+    function accToPretty(acc){
+      if(acc === -2) return "♭♭";
+      if(acc === -1) return "♭";
+      if(acc === 0) return "♮/—";
+      if(acc === 1) return "♯";
+      if(acc === 2) return "♯♯";
+      return "—";
+    }
+
+    function noteToName(note){
+      return `${note.letter}${accToText(note.acc)}${note.oct}`;
+    }
+
+    function noteToVexKey(note){
+      // VexFlow: "c#/4"
+      const l = note.letter.toLowerCase();
+      const a = accToText(note.acc);
+      return `${l}${a}/${note.oct}`;
+    }
+
+    function noteToMidi(note){
+      // MIDI: C4 = 60
+      const pc = (NATURAL_PC[note.letter] + note.acc + 1200) % 12;
+      return (note.oct + 1) * 12 + pc;
+    }
+
+    function midiToFreq(m){ return 440 * Math.pow(2, (m - 69)/12); }
+
+    function freqToNearestMidi(freq){
+      return Math.round(69 + 12 * Math.log2(freq/440));
+    }
+
+    function centsOffset(freq, midi){
+      const et = midiToFreq(midi);
+      return 1200 * Math.log2(freq/et);
+    }
+
+    function midiToSimpleName(midi){
+      const names = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+      const pc = ((midi%12)+12)%12;
+      const oct = Math.floor(midi/12)-1;
+      return `${names[pc]}${oct}`;
+    }
+
+    function getDiatonicTarget(refNote, genericNumber){
+      // Generic interval counting includes the starting note as "1"
+      // Steps in letter-space = genericNumber - 1
+      const steps = genericNumber - 1;
+      const refIdx = LETTERS.indexOf(refNote.letter);
+      const total = refIdx + steps;
+      const targetLetter = LETTERS[(total % 7 + 7) % 7];
+      const octShift = Math.floor(total / 7);
+      const targetOct = refNote.oct + octShift;
+      return { letter: targetLetter, oct: targetOct };
+    }
+
+    function naturalMidi(letter, oct){
+      const pc = NATURAL_PC[letter];
+      return (oct + 1) * 12 + pc;
+    }
+
+    function expectedAccForMidi(letter, oct, targetMidi){
+      const base = naturalMidi(letter, oct);
+      let acc = targetMidi - base;
+      // Fold into the closest representation within [-2..2] if possible.
+      // For our curriculum set, this stays inside the range.
+      acc = clamp(acc, -2, 2);
+      return acc;
+    }
+
+    function isSamePhysicalKey(noteA, noteB){
+      return noteToMidi(noteA) === noteToMidi(noteB);
+    }
+
+    // ----------------------------
+    // Tutorials + steps
+    // ----------------------------
+    const MUSIC_THEORY = {
+      staffClefsLedger: "https://www.musictheory.net/lessons/10",
+      stepsAccidentals: "https://www.musictheory.net/lessons/20",
+      genericIntervals: "https://www.musictheory.net/lessons/30",
+      specificIntervals: "https://www.musictheory.net/lessons/31",
+      writingIntervals: "https://www.musictheory.net/lessons/32",
+    };
+
+    // Four fixed tutorials (fundamentals in a comfortable low register).
+    const TUTORIALS = {
+      B:  { label:"1) B",  fundamental: {letter:"B", acc:0,  oct:2}, midi:47 },
+      Eb: { label:"2) Eb", fundamental: {letter:"E", acc:-1, oct:2}, midi:39 },
+      C:  { label:"3) C",  fundamental: {letter:"C", acc:0,  oct:2}, midi:36 },
+      Db: { label:"4) Db", fundamental: {letter:"D", acc:-1, oct:2}, midi:37 },
+    };
+
+    function buildSteps(){
+      // Core partials 1–8 follow the narrative sequence.
+      // Each step defines:
+      // - partial n
+      // - reference source note index: fromStep (step number, 1-based) OR "fundamental"
+      // - generic interval number for Phase A (null for step 1 where they just identify the fundamental)
+      // - semitone count for Phase B (null for step 1)
+      // - help text + link
+      // - short narration + double-check line
+      //
+      // Note: Step 8 uses reference step 4 (partial 4) + octave to reach partial 8.
+      return [
+        {
+          id:1, partial:1, from:"fundamental", generic:null, semitones:null,
+          clef:"bass",
+          task:"Identify the fundamental (write it on the staff).",
+          narration:"Start with the fundamental. This is your reference for everything that follows.",
+          doubleCheck:"",
+          help:{
+            title:"Staff basics",
+            text:"Find the note on the staff (lines/spaces) and set accidentals if needed.",
+            link:MUSIC_THEORY.staffClefsLedger
+          }
+        },
+        {
+          id:2, partial:2, from:1, generic:8, semitones:12,
+          clef:"bass",
+          task:"Next: the octave (same letter name, higher).",
+          narration:"Now the octave. Staff counting includes the first note as “1”.",
+          doubleCheck:"Double-check: octave = same letter name.",
+          help:{
+            title:"Steps & octaves",
+            text:"Count staff steps (line/space). The starting note counts as 1.",
+            link:MUSIC_THEORY.genericIntervals
+          }
+        },
+        {
+          id:3, partial:3, from:2, generic:5, semitones:7,
+          clef:"treble",
+          task:"Next: the perfect fifth above (generic 5th first).",
+          narration:"Generic first: make it *some kind of fifth*. Then use the keyboard: P5 = 7 half-steps.",
+          doubleCheck:"Spelling matters: a fifth must land on an F-something (not a G-something).",
+          help:{
+            title:"Fifths: generic vs specific",
+            text:"Phase A: letter distance (a fifth). Phase B: quality by half-steps (7 for P5).",
+            link:MUSIC_THEORY.writingIntervals
+          }
+        },
+        {
+          id:4, partial:4, from:3, generic:4, semitones:5,
+          clef:"treble",
+          task:"Next: a perfect fourth up from that fifth.",
+          narration:"From your fifth, go up a *fourth* (generic), then confirm: P4 = 5 half-steps.",
+          doubleCheck:"This lands you on the next ‘anchor’ B (partial 4).",
+          help:{
+            title:"Perfect fourths",
+            text:"A fourth is the next letter-family up (count includes the first note). P4 = 5 half-steps.",
+            link:MUSIC_THEORY.specificIntervals
+          }
+        },
+        {
+          id:5, partial:5, from:4, generic:3, semitones:4,
+          clef:"treble",
+          task:"Next: major third above (generic 3rd first).",
+          narration:"Generic third first. Then half-step check: M3 = 4 half-steps.",
+          doubleCheck:"Major third gives the ‘bright’ harmonic flavor (partial 5 is a bit flat vs 12-TET).",
+          help:{
+            title:"Thirds",
+            text:"A third spans three letter positions (including the start). M3 is 4 half-steps.",
+            link:MUSIC_THEORY.specificIntervals
+          }
+        },
+        {
+          id:6, partial:6, from:5, generic:3, semitones:3,
+          clef:"treble",
+          task:"Next: stack a minor third above.",
+          narration:"Generic third first, then m3 = 3 half-steps.",
+          doubleCheck:"Double-check: this should match the partial-3 note class (an octave higher).",
+          help:{
+            title:"Minor thirds",
+            text:"m3 is 3 half-steps. Remember: keyboard counting does NOT include the first key.",
+            link:MUSIC_THEORY.specificIntervals
+          }
+        },
+        {
+          id:7, partial:7, from:6, generic:3, semitones:3,
+          clef:"treble",
+          task:"Next: stack another minor third (minor-7-ish color).",
+          narration:"Same pattern: generic third, then 3 half-steps.",
+          doubleCheck:"Double-check: it’s a whole step below the 8th partial (octave above partial 4). Also: it’s noticeably flat—check the cents badge.",
+          help:{
+            title:"Intervals & tuning reality",
+            text:"In the harmonic series, partial 7 is famously ‘flat’ compared to 12-TET. Write the nearest 12-TET pitch, then notice the cents offset.",
+            link:MUSIC_THEORY.writingIntervals
+          }
+        },
+        {
+          id:8, partial:8, from:4, generic:8, semitones:12,
+          clef:"treble",
+          task:"Finally: the 8th partial (octave above partial 4).",
+          narration:"Octave again. You’ve now built partials 1–8.",
+          doubleCheck:"Cents should be ~0 here (octaves align).",
+          help:{
+            title:"Octaves (again)",
+            text:"Same letter name, higher octave. Staff counting includes the first note.",
+            link:MUSIC_THEORY.genericIntervals
+          }
+        },
+      ];
+    }
+
+    function buildBonusSteps(){
+      // Bonus relative to partial 8 (ratio n:1, but we keep semitones <= 7 from partial 8):
+      // 9/8 = M2 (2), 10/8 = M3 (4), 11/8 ~ A4 (6), 12/8 = P5 (7)
+      return [
+        {
+          id:9, partial:9, from:8, generic:2, semitones:2,
+          clef:"treble",
+          task:"Bonus: partial 9 (whole-step-ish above partial 8).",
+          narration:"Beyond here: whole-tone-ish, then chromatic-ish, then microtonal — beyond today’s needs.",
+          doubleCheck:"9/8 is close to a major 2nd (2 half-steps).",
+          help:{
+            title:"Specific intervals refresher",
+            text:"M2 = 2 half-steps. Keyboard counting excludes the starting key.",
+            link:MUSIC_THEORY.specificIntervals
+          }
+        },
+        {
+          id:10, partial:10, from:8, generic:3, semitones:4,
+          clef:"treble",
+          task:"Bonus: partial 10 (major third above partial 8).",
+          narration:"Same as earlier: generic third first, then M3 = 4 half-steps.",
+          doubleCheck:"10/8 reduces to 5/4 (major third).",
+          help:{
+            title:"Major third (again)",
+            text:"Phase A chooses the correct letter-family third. Phase B confirms 4 half-steps.",
+            link:MUSIC_THEORY.writingIntervals
+          }
+        },
+        {
+          id:11, partial:11, from:8, generic:4, semitones:6,
+          clef:"treble",
+          task:"Bonus: partial 11 (tritone-ish).",
+          narration:"This one is ‘spicy’ in tuning. Still: write the nearest 12-TET pitch and watch the cents.",
+          doubleCheck:"Nearest 12-TET will be tritone-ish (6 half-steps).",
+          help:{
+            title:"Intervals: tritone",
+            text:"A4/d5 sit at 6 half-steps in 12-TET. Spelling depends on the generic interval.",
+            link:MUSIC_THEORY.writingIntervals
+          }
+        },
+        {
+          id:12, partial:12, from:8, generic:5, semitones:7,
+          clef:"treble",
+          task:"Bonus: partial 12 (perfect fifth above partial 8).",
+          narration:"Last bonus: generic fifth first, then 7 half-steps.",
+          doubleCheck:"12/8 reduces to 3/2 (perfect fifth).",
+          help:{
+            title:"Perfect fifth (again)",
+            text:"Generic fifth locks the letter-family. Specific fifth is 7 half-steps.",
+            link:MUSIC_THEORY.writingIntervals
+          }
+        },
+      ];
+    }
+
+    // ----------------------------
+    // App state
+    // ----------------------------
+    const state = {
+      mode: "tutorial",      // "tutorial" | "practice"
+      tutorialKey: "B",
+      stepsCore: buildSteps(),
+      stepsBonus: buildBonusSteps(),
+      bonusEnabled: false,
+
+      // Progress
+      stepIndex: 0,          // 0-based in the active steps array
+      phase: "A",            // "A" (generic) or "B" (specific)
+      completed: {},         // stepId -> {note:...} for correct notes
+
+      // Current user entry (letter+oct+acc)
+      entry: {letter:"B", acc:0, oct:2},
+
+      // Practice stats
+      practice: {
+        attempts: 0,
+        correct: 0,
+        streak: 0,
+        showTarget: true,
+        // current practice tutorial "run" uses random fundamental
+        currentFund: null,
+      },
+
+      // Audio
+      audioReady: false,
+      keyboardSynth: null,
+      // For additive playback we create oscillators per play call (simple + robust).
+    };
+
+    function activeSteps(){
+      return state.bonusEnabled ? state.stepsCore.concat(state.stepsBonus) : state.stepsCore;
+    }
+
+    function currentStep(){
+      return activeSteps()[state.stepIndex];
+    }
+
+    function getFundamental(){
+      if(state.mode === "tutorial"){
+        return structuredClone(TUTORIALS[state.tutorialKey].fundamental);
+      }else{
+        return structuredClone(state.practice.currentFund.fundamental);
+      }
+    }
+
+    // We'll compute f0 as equal-tempered frequency of the tutorial fundamental midi.
+    function getF0(){
+      const midi = (state.mode === "tutorial")
+        ? TUTORIALS[state.tutorialKey].midi
+        : state.practice.currentFund.midi;
+      return midiToFreq(midi);
+    }
+
+    // Resolve the reference note for the current step.
+    function getReferenceNoteForStep(step){
+      if(step.from === "fundamental") return getFundamental();
+      const refId = step.from; // step number (1-based)
+      const found = state.completed[refId];
+      // If not completed yet (shouldn't happen), fall back to fundamental.
+      return found ? structuredClone(found.note) : getFundamental();
+    }
+
+    // For step 1, expected answer is the fundamental itself (spelled as given).
+    function getExpectedForStep(step){
+      const f0 = getF0();
+      const trueFreq = step.partial * f0;
+      const nearestMidi = freqToNearestMidi(trueFreq);
+      const cents = centsOffset(trueFreq, nearestMidi);
+
+      // "Truth" in 12-TET (pitch class / physical key target):
+      const nearestName = midiToSimpleName(nearestMidi);
+
+      // Spelling requirements:
+      // - Phase A expects correct diatonic letter + octave target (generic interval).
+      // - Phase B expects the correct accidental to land on the nearestMidi, while keeping the Phase A letter.
+      if(step.id === 1){
+        const fund = getFundamental();
+        const fundMidi = noteToMidi(fund);
+        const fundFreq = midiToFreq(fundMidi);
+        return {
+          trueFreq: f0,
+          nearestMidi: fundMidi,
+          nearestName: midiToSimpleName(fundMidi),
+          cents: 0,
+          genericTarget: { letter: fund.letter, oct: fund.oct },
+          requiredAcc: fund.acc,
+          spelledTarget: structuredClone(fund),
+        };
+      }
+
+      const ref = getReferenceNoteForStep(step);
+      const genericTarget = getDiatonicTarget(ref, step.generic);
+
+      // required accidental so that genericTarget letter + requiredAcc hits nearestMidi
+      const requiredAcc = expectedAccForMidi(genericTarget.letter, genericTarget.oct, nearestMidi);
+      const spelledTarget = { letter: genericTarget.letter, oct: genericTarget.oct, acc: requiredAcc };
+
+      return { trueFreq, nearestMidi, nearestName, cents, genericTarget, requiredAcc, spelledTarget };
+    }
+
+    // ----------------------------
+    // UI elements
+    // ----------------------------
+    const els = {
+      stepCounter: document.getElementById("stepCounter"),
+      phasePill: document.getElementById("phasePill"),
+      audioState: document.getElementById("audioState"),
+
+      btnTutorial: document.getElementById("btnTutorial"),
+      btnPractice: document.getElementById("btnPractice"),
+      tutorialSelect: document.getElementById("tutorialSelect"),
+      tutorialLabel: document.getElementById("tutorialLabel"),
+      btnBonus: document.getElementById("btnBonus"),
+
+      partialBadge: document.getElementById("partialBadge"),
+      ratioText: document.getElementById("ratioText"),
+      nearestText: document.getElementById("nearestText"),
+      centsText: document.getElementById("centsText"),
+      centsBadge: document.getElementById("centsBadge"),
+      targetBadge: document.getElementById("targetBadge"),
+
+      narration: document.getElementById("narration"),
+      taskType: document.getElementById("taskType"),
+      taskHint: document.getElementById("taskHint"),
+      doubleCheck: document.getElementById("doubleCheck"),
+
+      vf: document.getElementById("vf"),
+
+      yourNote: document.getElementById("yourNote"),
+      btnUp: document.getElementById("btnUp"),
+      btnDown: document.getElementById("btnDown"),
+      accBtns: Array.from(document.querySelectorAll(".accRow .acc")),
+      btnSubmit: document.getElementById("btnSubmit"),
+
+      feedbackMsg: document.getElementById("feedbackMsg"),
+      btnNext: document.getElementById("btnNext"),
+      btnPrev: document.getElementById("btnPrev"),
+
+      btnHelp: document.getElementById("btnHelp"),
+      btnHelp2: document.getElementById("btnHelp2"),
+      helpModal: document.getElementById("helpModal"),
+      helpTitle: document.getElementById("helpTitle"),
+      helpText: document.getElementById("helpText"),
+      helpLink: document.getElementById("helpLink"),
+      btnCloseHelp: document.getElementById("btnCloseHelp"),
+
+      btnHalfStepCheck: document.getElementById("btnHalfStepCheck"),
+      btnHalfStepCheckMobile: document.getElementById("btnHalfStepCheckMobile"),
+      kbdOverlay: document.getElementById("kbdOverlay"),
+      keyboard: document.getElementById("keyboard"),
+      kbdScroller: document.getElementById("kbdScroller"),
+      btnCloseKbd: document.getElementById("btnCloseKbd"),
+      btnRecenter: document.getElementById("btnRecenter"),
+      kbdHint: document.getElementById("kbdHint"),
+
+      btnPlayFund: document.getElementById("btnPlayFund"),
+      btnPlayUpTo: document.getElementById("btnPlayUpTo"),
+      btnPlayFund2: document.getElementById("btnPlayFund2"),
+      btnPlayUpTo2: document.getElementById("btnPlayUpTo2"),
+
+      btnResetStep: document.getElementById("btnResetStep"),
+      btnRestart: document.getElementById("btnRestart"),
+
+      practiceStats: document.getElementById("practiceStats"),
+    };
+
+    // ----------------------------
+    // VexFlow rendering (single staff, optionally switching clef)
+    // ----------------------------
+    let vfRenderer = null;
+    let vfContext = null;
+
+    function initVex(){
+      els.vf.innerHTML = "";
+      vfRenderer = new Vex.Flow.Renderer(els.vf, Vex.Flow.Renderer.Backends.SVG);
+      const w = els.vf.clientWidth;
+      const h = els.vf.clientHeight;
+      vfRenderer.resize(w, h);
+      vfContext = vfRenderer.getContext();
+      vfContext.setFont("Arial", 10, "").setBackgroundFillStyle("transparent");
+    }
+
+    function renderNotation(){
+      if(!vfRenderer) initVex();
+      const w = els.vf.clientWidth;
+      const h = els.vf.clientHeight;
+      vfRenderer.resize(w, h);
+
+      vfContext.clear();
+
+      const step = currentStep();
+      const expected = getExpectedForStep(step);
+      const ref = getReferenceNoteForStep(step);
+
+      // Choose clef: step clef if provided, else based on entry/ref
+      const clef = step.clef || (state.entry.oct >= 4 ? "treble" : "bass");
+
+      const staveX = 20;
+      const staveY = 30;
+      const staveW = w - 40;
+
+      const stave = new Vex.Flow.Stave(staveX, staveY, staveW);
+      stave.addClef(clef);
+      stave.setContext(vfContext).draw();
+
+      // We display:
+      // - reference note (grey) when step.id !== 1
+      // - entry note (accent color)
+      // This keeps focus low-text and musictheory.net-ish.
+      const notes = [];
+      const colors = [];
+
+      if(step.id !== 1){
+        notes.push(makeVfNote(ref, clef));
+        colors.push("rgba(152,162,179,.85)");
+      }
+      notes.push(makeVfNote(state.entry, clef));
+      colors.push("rgba(124,140,255,.95)");
+
+      // Apply styling per note.
+      notes.forEach((n, idx) => {
+        n.setStyle({
+          fillStyle: colors[idx],
+          strokeStyle: colors[idx],
+        });
+        // Accidentals
+        const a = (idx === 0 && step.id !== 1) ? ref.acc : state.entry.acc;
+        if(a !== 0){
+          n.addModifier(new Vex.Flow.Accidental(accToText(a)), 0);
+        }else{
+          // If user chose "natural/none" AND the key signature would be natural,
+          // we don't force a natural sign; this is "♮/—" behavior.
+          // (We keep it simple: no key signatures in this app.)
+        }
+      });
+
+      const voice = new Vex.Flow.Voice({num_beats: 2, beat_value: 4});
+      voice.setStrict(false);
+      voice.addTickables(notes);
+
+      new Vex.Flow.Formatter().joinVoices([voice]).format([voice], staveW - 40);
+      voice.draw(vfContext, stave);
+
+      // Optional: draw a small label
+      vfContext.save();
+      vfContext.setFillStyle("rgba(152,162,179,.85)");
+      vfContext.fillText(step.id === 1 ? "Your note" : "Reference + Your note", staveX + 6, staveY + 130);
+      vfContext.restore();
+
+      // Update readout
+      els.yourNote.textContent = noteToName(state.entry);
+    }
+
+    function makeVfNote(note, clef){
+      const key = noteToVexKey(note);
+      // Use quarter notes; spacing is not the lesson.
+      return new Vex.Flow.StaveNote({ clef, keys:[key], duration:"q" });
+    }
+
+    // Re-render on resize
+    window.addEventListener("resize", () => {
+      if(vfRenderer){
+        initVex();
+        renderNotation();
+      }
+    });
+
+    // ----------------------------
+    // Keyboard overlay (2-ish octaves, scroll, C markers)
+    // ----------------------------
+    const KEYBOARD_RANGE = {
+      startMidi: 48, // C3
+      count: 29      // C3 up to (C3 + 28) = A5-ish (enough for overlay)
+    };
+
+    const blackPC = new Set([1,3,6,8,10]); // C#, D#, F#, G#, A#
+    const keyboardEls = []; // {midi, el, isBlack, countEl, startEl, cmarkEl}
+
+    function buildKeyboard(){
+      els.keyboard.innerHTML = "";
+      keyboardEls.length = 0;
+
+      for(let i=0;i<KEYBOARD_RANGE.count;i++){
+        const midi = KEYBOARD_RANGE.startMidi + i;
+        const pc = ((midi%12)+12)%12;
+        const isBlack = blackPC.has(pc);
+
+        const key = document.createElement("button");
+        key.className = "key" + (isBlack ? " black" : "");
+        key.type = "button";
+        key.setAttribute("data-midi", String(midi));
+        key.setAttribute("aria-label", `Key ${midiToSimpleName(midi)}`);
+
+        const cmark = document.createElement("div");
+        cmark.className = "cmark";
+        if(pc === 0){
+          cmark.textContent = "C";
+        }else{
+          cmark.textContent = "";
+        }
+
+        const count = document.createElement("div");
+        count.className = "count";
+        count.textContent = "";
+
+        const startLabel = document.createElement("div");
+        startLabel.className = "startLabel";
+        startLabel.textContent = "";
+
+        key.appendChild(cmark);
+        key.appendChild(count);
+        key.appendChild(startLabel);
+
+        key.addEventListener("click", async () => {
+          await ensureAudio();
+          playKeyboardKey(midi);
+        });
+
+        els.keyboard.appendChild(key);
+
+        keyboardEls.push({ midi, el:key, isBlack, countEl:count, startEl:startLabel, cmarkEl:cmark });
+      }
+    }
+
+    function clearKeyboardMarks(){
+      keyboardEls.forEach(k => {
+        k.el.classList.remove("target");
+        k.countEl.style.display = "none";
+        k.countEl.textContent = "";
+        k.startEl.style.display = "none";
+        k.startEl.textContent = "";
+      });
+    }
+
+    function markHalfSteps(referenceMidi, semitonesNeeded){
+      clearKeyboardMarks();
+
+      // Start label (0) on reference key (NOT highlighted)
+      const startKey = keyboardEls.find(k => k.midi === referenceMidi);
+      if(startKey){
+        startKey.startEl.style.display = "block";
+        startKey.startEl.textContent = "Start (0)";
+      }
+
+      // Number successive keys to the right: 1..N (excluding start)
+      for(let s=1; s<=semitonesNeeded; s++){
+        const m = referenceMidi + s;
+        const key = keyboardEls.find(k => k.midi === m);
+        if(key){
+          key.countEl.style.display = "flex";
+          key.countEl.textContent = String(s);
+          if(s === semitonesNeeded){
+            key.el.classList.add("target");
+          }
+        }
+      }
+    }
+
+    function recenterKeyboard(referenceMidi){
+      // Smooth scroll so reference note is near the left.
+      const target = keyboardEls.find(k => k.midi === referenceMidi);
+      if(!target) return;
+      const scroller = els.kbdScroller;
+
+      const scrollerRect = scroller.getBoundingClientRect();
+      const keyRect = target.el.getBoundingClientRect();
+      const currentScroll = scroller.scrollLeft;
+
+      // Compute left position inside scroller content
+      const keyLeft = (keyRect.left - scrollerRect.left) + currentScroll;
+      const desiredLeft = Math.max(0, keyLeft - 40); // near left edge
+      scroller.scrollTo({ left: desiredLeft, behavior: "smooth" });
+    }
+
+    // ----------------------------
+    // Audio (Tone.js)
+    // ----------------------------
+    async function ensureAudio(){
+      if(state.audioReady) return;
+      try{
+        await Tone.start();
+        state.audioReady = true;
+        els.audioState.textContent = "on";
+        els.audioState.style.color = "var(--good)";
+
+        state.keyboardSynth = new Tone.Synth({
+          oscillator: { type: "triangle" },
+          envelope: { attack: 0.005, decay: 0.08, sustain: 0.0, release: 0.12 }
+        }).toDestination();
+        state.keyboardSynth.volume.value = -20; // quiet clicks
+      }catch(e){
+        // If blocked, keep UI neutral; user can try again via play button.
+        els.audioState.textContent = "blocked?";
+        els.audioState.style.color = "var(--warn)";
+      }
+    }
+
+    function playKeyboardKey(midi){
+      if(!state.keyboardSynth) return;
+      const f = midiToFreq(midi);
+      state.keyboardSynth.triggerAttackRelease(f, 0.12);
+    }
+
+    async function playFundamental(){
+      await ensureAudio();
+      const f0 = getF0();
+      const osc = new Tone.Oscillator({ type:"sine", frequency: f0 }).toDestination();
+      const g = new Tone.Gain(0.12).toDestination();
+      osc.disconnect();
+      osc.connect(g);
+      osc.start();
+      osc.stop("+0.9");
+    }
+
+    async function playUpToPartial(){
+      await ensureAudio();
+      const step = currentStep();
+      const maxPartial = step.partial;
+      const f0 = getF0();
+
+      const sum = new Tone.Gain(0.0001).toDestination(); // ramp to avoid click
+      const overall = new Tone.Gain(0.12).toDestination();
+      sum.disconnect();
+      sum.connect(overall);
+
+      // Create oscillators: sine at n*f0, amp ~ 1/n
+      const oscs = [];
+      for(let n=1; n<=maxPartial; n++){
+        const osc = new Tone.Oscillator({ type:"sine", frequency: n * f0 });
+        const g = new Tone.Gain(1 / n);
+        osc.connect(g);
+        g.connect(sum);
+        oscs.push({osc, g});
+      }
+
+      // Gentle fade in/out
+      sum.gain.setValueAtTime(0.0001, Tone.now());
+      sum.gain.exponentialRampToValueAtTime(1.0, Tone.now() + 0.03);
+
+      oscs.forEach(o => o.osc.start());
+      // Stop after ~1.2s
+      setTimeout(() => {
+        sum.gain.exponentialRampToValueAtTime(0.0001, Tone.now() + 0.08);
+        oscs.forEach(o => o.osc.stop("+0.1"));
+      }, 1150);
+    }
+
+    async function playThisPartial(partial){
+      await ensureAudio();
+      const f0 = getF0();
+      const osc = new Tone.Oscillator({ type:"sine", frequency: partial * f0 }).toDestination();
+      const g = new Tone.Gain(0.09).toDestination();
+      osc.disconnect();
+      osc.connect(g);
+      osc.start();
+      osc.stop("+0.4");
+    }
+
+    // ----------------------------
+    // Two-phase validation
+    // ----------------------------
+    function validatePhaseA(step, expected){
+      // Phase A checks: correct letter + octave (generic interval target).
+      const { letter, oct } = expected.genericTarget;
+      const ok = (state.entry.letter === letter && state.entry.oct === oct);
+      return { ok, expectedLetter: letter, expectedOct: oct };
+    }
+
+    function validatePhaseB(step, expected){
+      // Phase B checks:
+      // 1) Enforce spelling: must keep the Phase A letter-family (already ensured by phase gating)
+      // 2) Check physical key (midi) matches nearest 12-TET midi
+      // 3) Check accidental matches required accidental for that letter
+      const entryMidi = noteToMidi(state.entry);
+      const targetMidi = expected.nearestMidi;
+
+      const sameKey = (entryMidi === targetMidi);
+      const accOk = (state.entry.acc === expected.requiredAcc);
+
+      return { sameKey, accOk, entryMidi, targetMidi };
+    }
+
+    function setFeedback(kind, html){
+      els.feedbackMsg.className = "msg" + (kind ? " " + kind : "");
+      els.feedbackMsg.innerHTML = html;
+    }
+
+    function updatePhaseUI(){
+      const step = currentStep();
+      const expected = getExpectedForStep(step);
+
+      // Step counter
+      const total = activeSteps().length;
+      els.stepCounter.textContent = `Step ${state.stepIndex + 1} / ${total}`;
+
+      // Phase pill
+      if(step.id === 1){
+        state.phase = "A";
+      }
+      els.phasePill.textContent = (state.phase === "A") ? "Phase A" : "Phase B";
+
+      // Task copy
+      if(step.id === 1){
+        els.taskType.textContent = "Find the note";
+        els.taskHint.textContent = "Place the fundamental on the staff.";
+      }else if(state.phase === "A"){
+        els.taskType.textContent = "Generic interval first";
+        els.taskHint.textContent = "Staff counting includes the first note.";
+      }else{
+        els.taskType.textContent = "Specific interval second";
+        els.taskHint.textContent = "Keyboard half-step counting does NOT include the first key.";
+      }
+
+      els.doubleCheck.textContent = step.doubleCheck || "";
+
+      // Half-step check button only appears in Phase B steps
+      const showHalf = (step.id !== 1 && state.phase === "B");
+      els.btnHalfStepCheck.style.display = showHalf ? "inline-flex" : "none";
+      els.btnHalfStepCheckMobile.style.display = showHalf ? "inline-flex" : "none";
+
+      // Accidental selector is only "meaningful" in Phase B, but we keep it visible.
+      // We still gate validation: in Phase A, accidental won't progress anything.
+
+      // Badges: partial, ratio, nearest note, cents
+      const cents = expected.cents;
+      const centsRounded = Math.round(cents * 10) / 10;
+
+      els.ratioText.textContent = `(${step.partial}:1)`;
+      els.nearestText.textContent = expected.nearestName;
+      els.centsText.textContent = `${centsRounded >= 0 ? "+" : ""}${centsRounded}¢`;
+
+      // Color cents badge: near 0 = good, moderate = warn, large = bad
+      els.centsBadge.classList.remove("good","warn","bad");
+      const abs = Math.abs(centsRounded);
+      if(abs <= 6) els.centsBadge.classList.add("good");
+      else if(abs <= 20) els.centsBadge.classList.add("warn");
+      else els.centsBadge.classList.add("bad");
+
+      // Partial badge dot
+      els.partialBadge.querySelector(".dot").style.background = "rgba(124,140,255,.85)";
+      els.targetBadge.querySelector(".dot").style.background = "rgba(255,255,255,.35)";
+      els.centsBadge.querySelector(".dot").style.background = (abs <= 6) ? "var(--good)" : (abs <= 20 ? "var(--warn)" : "var(--bad)");
+
+      // Narration
+      els.narration.textContent = step.narration || "";
+
+      // Practice stats visibility
+      if(state.mode === "practice"){
+        els.practiceStats.style.display = "block";
+        const p = state.practice;
+        els.practiceStats.innerHTML =
+          `<span class="mono">Attempts:</span> ${p.attempts} · <span class="mono">Correct:</span> ${p.correct} · <span class="mono">Streak:</span> ${p.streak}` +
+          ` · <button class="btn" id="toggleTarget" style="padding:8px 10px; min-height:36px;">${p.showTarget ? "Hide target" : "Show target"}</button>`;
+        // wire toggle
+        setTimeout(() => {
+          const t = document.getElementById("toggleTarget");
+          if(t){
+            t.onclick = () => {
+              state.practice.showTarget = !state.practice.showTarget;
+              renderAll();
+            };
+          }
+        }, 0);
+      }else{
+        els.practiceStats.style.display = "none";
+      }
+
+      // In challenge mode, hide nearestText badge content (still compute cents for badge)
+      if(state.mode === "practice" && !state.practice.showTarget){
+        els.nearestText.textContent = "—";
+      }
+    }
+
+    function submit(){
+      const step = currentStep();
+      const expected = getExpectedForStep(step);
+      const ref = getReferenceNoteForStep(step);
+
+      // Step 1: direct compare to given fundamental spelling.
+      if(step.id === 1){
+        state.practice.attempts += (state.mode === "practice") ? 1 : 0;
+        const fund = getFundamental();
+
+        const letterOk = (state.entry.letter === fund.letter);
+        const octOk = (state.entry.oct === fund.oct);
+        const midiOk = (noteToMidi(state.entry) === noteToMidi(fund));
+        const accOk = (state.entry.acc === fund.acc);
+
+        if(letterOk && octOk && midiOk && accOk){
+          setFeedback("good", `✅ Nice. Fundamental locked in: <span class="mono">${noteToName(fund)}</span>.`);
+          state.completed[1] = { note: structuredClone(state.entry) };
+          if(state.mode === "practice"){
+            state.practice.correct += 1;
+            state.practice.streak += 1;
+          }
+          // Move on
+          state.phase = "A";
+          return;
+        }else{
+          if(midiOk && (!letterOk || !accOk)){
+            setFeedback("warn", `Enharmonic warning: you found the right pitch, but we need the correct spelling for this tutorial’s fundamental.`);
+          }else{
+            setFeedback("bad", `Not quite. Try finding the fundamental on the staff (lines/spaces), then adjust accidentals if needed.`);
+          }
+          if(state.mode === "practice"){
+            state.practice.streak = 0;
+          }
+          return;
+        }
+      }
+
+      // Steps 2+ use the two-phase gate.
+      if(state.phase === "A"){
+        const A = validatePhaseA(step, expected);
+        if(A.ok){
+          setFeedback("good", `✅ Phase A correct: your note is the right <span class="mono">${ordinal(step.generic)}</span> (letter-family). Now set the accidental for quality (Phase B).`);
+          state.phase = "B";
+
+          // Keep accidental as-is; student can adjust.
+          // Show half-step tool.
+          renderAll();
+          return;
+        }else{
+          const target = `${expected.genericTarget.letter}${expected.genericTarget.oct}`;
+          setFeedback("bad",
+            `Phase A first: we need the correct <strong>generic</strong> interval. Count lines/spaces on the staff (include the first note as “1”).<br>` +
+            `Hint: a <span class="mono">${ordinal(step.generic)}</span> from <span class="mono">${noteToName(ref)}</span> must land on <span class="mono">${expected.genericTarget.letter}-something</span> (target letter is <span class="mono">${target}</span>).`
+          );
+          return;
+        }
+      }
+
+      // Phase B
+      state.practice.attempts += (state.mode === "practice") ? 1 : 0;
+
+      const B = validatePhaseB(step, expected);
+
+      // Enharmonic enforcement:
+      // If they hit the correct physical key but wrong spelling (letter-family wrong),
+      // this would have been blocked by Phase A. However, if they reset step or used accidental changes
+      // and somehow changed letter via up/down, it is still caught.
+      const spelledTarget = expected.spelledTarget;
+
+      if(B.sameKey && !B.accOk){
+        // They are on the correct key but used the wrong accidental for that letter.
+        setFeedback("warn",
+          `Almost: you found the right <strong>pitch</strong>, but the spelling is off for a <span class="mono">${ordinal(step.generic)}</span>.<br>` +
+          `We need <span class="mono">${spelledTarget.letter}${accToText(spelledTarget.acc)}${spelledTarget.oct}</span> (because a <span class="mono">${ordinal(step.generic)}</span> must be some kind of <span class="mono">${spelledTarget.letter}</span>).`
+        );
+        if(state.mode === "practice"){
+          state.practice.streak = 0;
+        }
+        return;
+      }
+
+      // If midi matches and accOk, we are correct.
+      if(B.sameKey && B.accOk){
+        setFeedback("good",
+          `✅ Correct: <span class="mono">${noteToName(state.entry)}</span> (nearest 12-TET). ` +
+          `Cents offset: <span class="mono">${formatCents(expected.cents)}</span>.`
+        );
+
+        state.completed[step.id] = { note: structuredClone(state.entry) };
+
+        if(state.mode === "practice"){
+          state.practice.correct += 1;
+          state.practice.streak += 1;
+        }
+
+        // Optional confirmation sound
+        playThisPartial(step.partial);
+
+        // Advance to next step "ready state" (Phase A).
+        state.phase = "A";
+        return;
+      }
+
+      // If letter-family is correct (Phase A passed) but wrong physical key, guide half-step counting.
+      if(!B.sameKey){
+        const needed = step.semitones;
+        setFeedback("bad",
+          `Phase B: half-step counting time. Use the keyboard: do <strong>NOT</strong> count the first key; the next key is “1”.<br>` +
+          `For this interval, you need <span class="mono">${needed}</span> half-steps from the reference note. Try <strong>Half-step check</strong>.`
+        );
+        if(state.mode === "practice"){
+          state.practice.streak = 0;
+        }
+        return;
+      }
+
+      // Fallback
+      setFeedback("bad", `Not quite. Re-check Phase A (staff steps) and Phase B (half-steps).`);
+      if(state.mode === "practice"){
+        state.practice.streak = 0;
+      }
+    }
+
+    function ordinal(n){
+      const s = ["th","st","nd","rd"];
+      const v = n%100;
+      return n + (s[(v-20)%10] || s[v] || s[0]);
+    }
+
+    function formatCents(c){
+      const r = Math.round(c*10)/10;
+      return `${r >= 0 ? "+" : ""}${r}¢`;
+    }
+
+    // ----------------------------
+    // Entry controls
+    // ----------------------------
+    function moveByStaffStep(dir){
+      // dir: +1 up, -1 down
+      const idx = LETTERS.indexOf(state.entry.letter);
+      let nextIdx = idx + dir;
+      let oct = state.entry.oct;
+
+      if(nextIdx > 6){ nextIdx = 0; oct += 1; }
+      if(nextIdx < 0){ nextIdx = 6; oct -= 1; }
+
+      state.entry.letter = LETTERS[nextIdx];
+      state.entry.oct = oct;
+
+      // (Important) Accidentals stay as chosen.
+      renderAll();
+    }
+
+    function setAccidental(acc){
+      state.entry.acc = acc;
+      els.accBtns.forEach(b => {
+        const a = Number(b.dataset.acc);
+        b.setAttribute("aria-pressed", String(a === acc));
+      });
+      renderAll();
+    }
+
+    function resetStep(){
+      const step = currentStep();
+
+      if(step.id === 1){
+        state.entry = structuredClone(getFundamental());
+      }else{
+        // Reset to Phase A suggestion: start at the diatonic target letter/oct, accidental to 0
+        const expected = getExpectedForStep(step);
+        state.entry.letter = expected.genericTarget.letter;
+        state.entry.oct = expected.genericTarget.oct;
+        state.entry.acc = 0;
+      }
+
+      // Reset to Phase A (so students re-do the intended sequence)
+      state.phase = (step.id === 1) ? "A" : "A";
+      setFeedback("", "Reset. Now try again (Phase A first).");
+      setAccidental(state.entry.acc); // updates buttons + render
+      renderAll();
+    }
+
+    function goNext(){
+      const steps = activeSteps();
+
+      // Only advance if current step is completed.
+      const step = currentStep();
+      if(!state.completed[step.id]){
+        setFeedback("warn", "Before moving on: submit a correct answer for this step.");
+        return;
+      }
+
+      if(state.stepIndex < steps.length - 1){
+        state.stepIndex += 1;
+
+        // Prep entry for next step: use generic target letter/oct + keep acc at 0.
+        const nextStep = currentStep();
+        const exp = getExpectedForStep(nextStep);
+
+        if(nextStep.id === 1){
+          state.entry = structuredClone(getFundamental());
+        }else{
+          state.entry = { letter: exp.genericTarget.letter, oct: exp.genericTarget.oct, acc: 0 };
+        }
+        setAccidental(state.entry.acc);
+        state.phase = (nextStep.id === 1) ? "A" : "A";
+        setFeedback("", "Ready. Phase A: get the generic interval on the staff.");
+        renderAll();
+      }else{
+        setFeedback("good", "🎉 You finished this run. Want to restart or switch tutorials/practice?");
+      }
+    }
+
+    function goPrev(){
+      if(state.stepIndex <= 0) return;
+      state.stepIndex -= 1;
+      const step = currentStep();
+      const saved = state.completed[step.id]?.note;
+
+      if(saved){
+        state.entry = structuredClone(saved);
+      }else{
+        const exp = getExpectedForStep(step);
+        state.entry = step.id === 1 ? structuredClone(getFundamental()) : { letter: exp.genericTarget.letter, oct: exp.genericTarget.oct, acc: 0 };
+      }
+
+      // Phase: if step solved, set to A; otherwise A.
+      state.phase = "A";
+      setAccidental(state.entry.acc);
+      setFeedback("", "Back one step.");
+      renderAll();
+    }
+
+    // ----------------------------
+    // Help modal
+    // ----------------------------
+    function openHelp(){
+      const step = currentStep();
+      const h = step.help;
+      els.helpTitle.textContent = h.title || "Help";
+      els.helpText.textContent = h.text || "";
+      els.helpLink.href = h.link || MUSIC_THEORY.staffClefsLedger;
+
+      els.helpModal.setAttribute("aria-hidden","false");
+      // Focus close for accessibility
+      els.btnCloseHelp.focus();
+    }
+
+    function closeHelp(){
+      els.helpModal.setAttribute("aria-hidden","true");
+    }
+
+    // ----------------------------
+    // Half-step keyboard overlay
+    // ----------------------------
+    function openHalfStep(){
+      const step = currentStep();
+      if(step.id === 1 || state.phase !== "B") return;
+
+      const ref = getReferenceNoteForStep(step);
+      const refMidi = noteToMidi(ref);
+      const needed = step.semitones;
+
+      // Ensure keyboard exists
+      if(keyboardEls.length === 0) buildKeyboard();
+
+      // Mark and recenter
+      markHalfSteps(refMidi, needed);
+      recenterKeyboard(refMidi);
+
+      // Update hint line
+      els.kbdHint.innerHTML =
+        `Reference: <span class="mono">${noteToName(ref)}</span> (Start = 0, uncounted). ` +
+        `Count <span class="mono">${needed}</span> half-steps to the right to find the target key.`;
+
+      els.kbdOverlay.setAttribute("aria-hidden","false");
+      els.btnCloseKbd.focus();
+    }
+
+    function closeHalfStep(){
+      els.kbdOverlay.setAttribute("aria-hidden","true");
+    }
+
+    // ----------------------------
+    // Practice mode generator
+    // ----------------------------
+    const PRACTICE_POOL = [
+      { fundamental:{letter:"C", acc:0, oct:2}, midi:36 },
+      { fundamental:{letter:"D", acc:-1, oct:2}, midi:37 }, // Db2
+      { fundamental:{letter:"D", acc:0, oct:2}, midi:38 },
+      { fundamental:{letter:"E", acc:-1, oct:2}, midi:39 }, // Eb2
+      { fundamental:{letter:"E", acc:0, oct:2}, midi:40 },
+      { fundamental:{letter:"F", acc:0, oct:2}, midi:41 },
+      { fundamental:{letter:"F", acc:1, oct:2}, midi:42 },  // F#2
+      { fundamental:{letter:"G", acc:0, oct:2}, midi:43 },
+      { fundamental:{letter:"A", acc:-1, oct:2}, midi:44 }, // Ab2
+      { fundamental:{letter:"A", acc:0, oct:2}, midi:45 },
+      { fundamental:{letter:"B", acc:-1, oct:2}, midi:46 }, // Bb2
+      { fundamental:{letter:"B", acc:0, oct:2}, midi:47 },  // B2
+    ];
+
+    function startPracticeRun(){
+      state.practice.currentFund = structuredClone(PRACTICE_POOL[Math.floor(Math.random()*PRACTICE_POOL.length)]);
+      restartRun();
+      setFeedback("", "Practice run started. Same rules: Phase A (generic), then Phase B (specific).");
+    }
+
+    // ----------------------------
+    // Restart / mode changes
+    // ----------------------------
+    function restartRun(){
+      state.stepIndex = 0;
+      state.phase = "A";
+      state.completed = {};
+
+      // Set entry to fundamental (spelled)
+      state.entry = structuredClone(getFundamental());
+      setAccidental(state.entry.acc);
+
+      // Reset feedback
+      setFeedback("", "Tap Submit when you’re ready. (Phase A first.)");
+
+      renderAll();
+    }
+
+    function setMode(mode){
+      state.mode = mode;
+
+      els.btnTutorial.setAttribute("aria-pressed", String(mode === "tutorial"));
+      els.btnPractice.setAttribute("aria-pressed", String(mode === "practice"));
+
+      if(mode === "tutorial"){
+        els.tutorialSelect.style.display = "";
+        els.tutorialLabel.style.display = "";
+        els.btnBonus.style.display = "";
+        // Keep current tutorial
+        restartRun();
+      }else{
+        els.tutorialSelect.style.display = "none";
+        els.tutorialLabel.style.display = "none";
+        els.btnBonus.style.display = "none";
+        state.bonusEnabled = false;
+        startPracticeRun();
+      }
+      renderAll();
+    }
+
+    // ----------------------------
+    // Rendering everything
+    // ----------------------------
+    function renderAll(){
+      updatePhaseUI();
+      renderNotation();
+
+      // Update accidental button pressed states
+      els.accBtns.forEach(b => {
+        const a = Number(b.dataset.acc);
+        b.setAttribute("aria-pressed", String(a === state.entry.acc));
+      });
+
+      // Update partial badge text
+      const step = currentStep();
+      els.partialBadge.querySelector("strong").textContent = `Partial ${step.partial}`;
+    }
+
+    // ----------------------------
+    // Wire up UI events
+    // ----------------------------
+    els.btnUp.addEventListener("click", () => moveByStaffStep(+1));
+    els.btnDown.addEventListener("click", () => moveByStaffStep(-1));
+
+    els.accBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const acc = Number(btn.dataset.acc);
+        setAccidental(acc);
+      });
+    });
+
+    els.btnSubmit.addEventListener("click", () => { submit(); renderAll(); });
+
+    els.btnNext.addEventListener("click", () => { goNext(); });
+    els.btnPrev.addEventListener("click", () => { goPrev(); });
+
+    els.btnHelp.addEventListener("click", openHelp);
+    els.btnHelp2.addEventListener("click", openHelp);
+    els.btnCloseHelp.addEventListener("click", closeHelp);
+    els.helpModal.addEventListener("click", (e) => {
+      if(e.target === els.helpModal) closeHelp();
+    });
+
+    els.btnHalfStepCheck.addEventListener("click", openHalfStep);
+    els.btnHalfStepCheckMobile.addEventListener("click", openHalfStep);
+    els.btnCloseKbd.addEventListener("click", closeHalfStep);
+    els.kbdOverlay.addEventListener("click", (e) => {
+      if(e.target === els.kbdOverlay) closeHalfStep();
+    });
+
+    els.btnRecenter.addEventListener("click", () => {
+      const step = currentStep();
+      const ref = getReferenceNoteForStep(step);
+      recenterKeyboard(noteToMidi(ref));
+    });
+
+    els.btnPlayFund.addEventListener("click", playFundamental);
+    els.btnPlayUpTo.addEventListener("click", playUpToPartial);
+    els.btnPlayFund2.addEventListener("click", playFundamental);
+    els.btnPlayUpTo2.addEventListener("click", playUpToPartial);
+
+    els.btnResetStep.addEventListener("click", resetStep);
+    els.btnRestart.addEventListener("click", restartRun);
+
+    els.btnTutorial.addEventListener("click", () => setMode("tutorial"));
+    els.btnPractice.addEventListener("click", () => setMode("practice"));
+
+    els.tutorialSelect.addEventListener("change", () => {
+      state.tutorialKey = els.tutorialSelect.value;
+      restartRun();
+    });
+
+    els.btnBonus.addEventListener("click", () => {
+      state.bonusEnabled = !state.bonusEnabled;
+      els.btnBonus.classList.toggle("good", state.bonusEnabled);
+      els.btnBonus.textContent = state.bonusEnabled ? "Bonus 9–12 (ON)" : "Bonus 9–12";
+      // If we were beyond core steps and turned bonus off, clamp
+      if(!state.bonusEnabled){
+        const coreLen = state.stepsCore.length;
+        if(state.stepIndex >= coreLen){
+          state.stepIndex = coreLen - 1;
+        }
+      }
+      // Restart is cleaner (keeps narrative consistent)
+      restartRun();
+    });
+
+    // Keyboard shortcuts (basic)
+    window.addEventListener("keydown", (e) => {
+      if(els.helpModal.getAttribute("aria-hidden") === "false"){
+        if(e.key === "Escape") closeHelp();
+        return;
+      }
+      if(els.kbdOverlay.getAttribute("aria-hidden") === "false"){
+        if(e.key === "Escape") closeHalfStep();
+        return;
+      }
+
+      if(e.key === "ArrowUp"){ e.preventDefault(); moveByStaffStep(+1); }
+      if(e.key === "ArrowDown"){ e.preventDefault(); moveByStaffStep(-1); }
+      if(e.key === "Enter"){ e.preventDefault(); submit(); renderAll(); }
+      if(e.key.toLowerCase() === "h"){ openHelp(); }
+      if(e.key.toLowerCase() === "k"){ openHalfStep(); }
+    });
+
+    // ----------------------------
+    // Boot
+    // ----------------------------
+    (function boot(){
+      // Initialize tutorial select
+      els.tutorialSelect.value = state.tutorialKey;
+
+      // Keyboard is built lazily on first open, but we can build now for snappy.
+      buildKeyboard();
+
+      // Initial run
+      restartRun();
+
+      // Subtle hint about audio state
+      els.audioState.textContent = "off";
+      els.audioState.style.color = "var(--muted)";
+    })();
+  </script>
+</body>
+</html>

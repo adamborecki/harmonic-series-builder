@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Harmonic Series Builder (Staff + Keyboard)</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <style>
+    :root {
+      --bg: #121212;
+      --text: #e0e0e0;
+      --panel-bg: #1e1e1e;
+      --accent: #4caf50;
+      --accent-hover: #45a049;
+      --danger: #f44336;
+      --warning: #ff9800;
+      --key-white: #ffffff;
+      --key-black: #000000;
+      --key-highlight: #ffeb3b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3 { margin: 0 0 10px 0; }
+    p { margin: 0 0 10px 0; line-height: 1.4; }
+
+    button {
+      background-color: var(--panel-bg);
+      color: var(--text);
+      border: 1px solid #555;
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-size: 16px;
+      cursor: pointer;
+      min-height: 48px;
+      touch-action: manipulation;
+      transition: background 0.2s;
+    }
+    button:hover { background-color: #333; }
+    button.primary { background-color: var(--accent); color: #fff; border: none; }
+    button.primary:hover { background-color: var(--accent-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    header {
+      padding: 15px;
+      background: var(--panel-bg);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      z-index: 10;
+    }
+
+    .header-controls {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 15px;
+      gap: 15px;
+    }
+
+    #prompt-panel {
+      background: var(--panel-bg);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid var(--accent);
+    }
+    
+    .instruction-text { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+    .sub-instruction { font-size: 14px; color: #aaa; }
+    
+    /* VexFlow Forced White for Reliability */
+    .notation-wrapper {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-x: auto;
+      text-align: center;
+    }
+    
+    #hz-display {
+      font-size: 12px;
+      color: #aaa;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding: 5px;
+    }
+    .cents-badge {
+      display: inline-block;
+      background: #333;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 5px;
+    }
+
+    /* Controls */
+    .controls-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Half-step Check Tool */
+    #half-step-tool {
+      background: #2a2a2a;
+      padding: 15px;
+      border-radius: 8px;
+      border: 1px solid #444;
+    }
+    .stepper-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .stepper-count { font-size: 20px; font-weight: bold; min-width: 30px; text-align: center; }
+
+    /* Keyboard */
+    .keyboard-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 0;
+      background: #000;
+      border-radius: 8px;
+    }
+    .keyboard {
+      display: flex;
+      position: relative;
+      height: 120px;
+      padding-left: 10px;
+      padding-right: 10px;
+      width: max-content;
+    }
+    .key {
+      position: relative;
+      border-radius: 0 0 4px 4px;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 5px;
+      font-size: 12px;
+      color: #666;
+    }
+    .key.white {
+      width: 40px;
+      height: 120px;
+      background: var(--key-white);
+      border: 1px solid #ccc;
+      z-index: 1;
+    }
+    .key.black {
+      width: 26px;
+      height: 75px;
+      background: var(--key-black);
+      position: absolute;
+      top: 0;
+      right: -13px;
+      z-index: 2;
+      color: #aaa;
+    }
+    .key.highlight { background: var(--key-highlight) !important; color: #000; font-weight: bold;}
+    .key.stepper-highlight { background: #03a9f4 !important; color: #fff; }
+    
+    .overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      color: white;
+    }
+    .overlay h2 { font-size: 24px; margin-bottom: 20px; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px; left: 50%; transform: translateX(-50%);
+      background: var(--warning);
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 2000;
+    }
+
+    #help-modal { display: none; }
+    #help-modal.active { display: flex; }
+    .modal-content {
+      background: var(--panel-bg);
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 500px;
+      text-align: left;
+    }
+    .modal-content a { color: var(--accent); }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div id="audio-overlay" class="overlay">
+    <h2>Harmonic Series Builder</h2>
+    <p>Interactive lesson with sound.</p>
+    <button class="primary" onclick="initApp()">Tap to Enable Audio & Start</button>
+  </div>
+
+  <div id="help-modal" class="overlay">
+    <div class="modal-content">
+      <h2>Help & Resources</h2>
+      <p>Need a refresher? Check out these lessons on musictheory.net:</p>
+      <ul>
+        <li><a href="https://www.musictheory.net/lessons/10" target="_blank">The Staff, Clefs, and Ledger Lines</a></li>
+        <li><a href="https://www.musictheory.net/lessons/20" target="_blank">Steps and Accidentals</a></li>
+        <li><a href="https://www.musictheory.net/lessons/30" target="_blank">Generic Intervals</a></li>
+        <li><a href="https://www.musictheory.net/lessons/31" target="_blank">Specific Intervals</a></li>
+        <li><a href="https://www.musictheory.net/lessons/32" target="_blank">Writing Intervals</a></li>
+      </ul>
+      <button class="primary" style="width:100%; margin-top:15px;" onclick="document.getElementById('help-modal').classList.remove('active')">Close</button>
+    </div>
+  </div>
+
+  <header>
+    <h1>Harmonic Builder</h1>
+    <div class="header-controls">
+      <label class="toggle-label">
+        <input type="checkbox" id="practice-toggle" onchange="togglePracticeMode()"> Practice Mode
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" id="reminders-toggle" checked onchange="updateUI()"> Reminders
+      </label>
+      <button onclick="document.getElementById('help-modal').classList.add('active')">Help</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="btn-group" style="margin-bottom: -5px;">
+      <button onclick="playFundamental()">Play Fundamental</button>
+      <button onclick="playSeries()">Play Series (Completed)</button>
+    </div>
+
+    <div id="prompt-panel">
+      <div class="instruction-text" id="main-prompt">Loading...</div>
+      <div class="sub-instruction" id="sub-prompt"></div>
+      <div id="enharmonic-warning" class="sub-instruction hidden" style="color: var(--warning); margin-top: 10px; font-weight: bold;"></div>
+    </div>
+
+    <div class="notation-wrapper">
+      <div id="vexflow-container"></div>
+    </div>
+    
+    <div id="hz-display"></div>
+
+    <div class="controls-panel">
+      <div id="step-a-container">
+        <h3>Step A: Put the note on the right line/space (generic interval)</h3>
+        <div class="btn-group">
+          <button onclick="moveNote(1)">⬆️ Move Note Up</button>
+          <button onclick="moveNote(-1)">⬇️ Move Note Down</button>
+          <button class="primary" onclick="checkStepA()">Check Note Position</button>
+        </div>
+      </div>
+
+      <div id="step-b-container" class="hidden">
+        <h3>Step B: Add accidental if needed (half-step check)</h3>
+        <div class="btn-group" id="accidental-btns">
+          <button onclick="setAccidental('bb')" id="btn-bb">bb</button>
+          <button onclick="setAccidental('b')" id="btn-b">b</button>
+          <button onclick="setAccidental('n')" id="btn-n">Natural</button>
+          <button onclick="setAccidental('#')" id="btn-hash">#</button>
+          <button onclick="setAccidental('##')" id="btn-hashhash">##</button>
+          <button class="primary" onclick="checkStepB()">Submit Partial</button>
+        </div>
+        <button onclick="toggleStepper()" style="margin-top:10px; max-width: 250px;">Toggle Half-step Check Tool</button>
+      </div>
+      
+      <div id="half-step-tool" class="hidden">
+        <div><strong>Half-step Checker</strong></div>
+        <div id="stepper-hint" class="sub-instruction" style="color:var(--warning);"></div>
+        <div class="stepper-controls">
+          <button onclick="stepHalf(-1)">⬅ Prev half-step</button>
+          <div class="stepper-count" id="stepper-count-display">0</div>
+          <button onclick="stepHalf(1)">Next half-step ➔</button>
+        </div>
+        <div class="sub-instruction" style="margin-top:5px;">Count on the keyboard below. (Start key is 0).</div>
+      </div>
+    </div>
+
+    <div class="keyboard-wrapper">
+      <div id="keyboard" class="keyboard"></div>
+    </div>
+  </main>
+
+  <div id="toast" class="toast">Message</div>
+
+  <script>
+    // --- State & Constants ---
+    const VF = Vex.Flow;
+    let synth = null;
+    let isPracticeMode = false;
+    
+    // Music logic definitions
+    const noteNames = ['C','D','E','F','G','A','B'];
+    const baseMidi = { 'C':0, 'D':2, 'E':4, 'F':5, 'G':7, 'A':9, 'B':11 };
+    const accToVal = { 'bb':-2, 'b':-1, 'n':0, '#':1, '##':2 };
+    
+    // Available Accidentals
+    let validAccidentals = ['bb', 'b', 'n', '#', '##'];
+
+    // Pedagogical steps: 1, 2, 3, 4, 5, 6, 8, 7
+    const partialsDef = [
+      { num: 1, name: "1st partial", desc: "Fundamental", isFund: true },
+      { num: 2, baseIdx: 0, name: "2nd partial", desc: "Octave above fundamental", gen: 7, hs: 12 },
+      { num: 3, baseIdx: 1, name: "3rd partial", desc: "Perfect 5th above the 2nd partial", gen: 4, hs: 7, cheat: "P5=7" },
+      { num: 4, baseIdx: 1, name: "4th partial", desc: "Octave above 2nd partial (two octaves above fundamental)", gen: 7, hs: 12 },
+      { num: 5, baseIdx: 3, name: "5th partial", desc: "Major 3rd above 4th partial", gen: 2, hs: 4, cheat: "M3=4" },
+      { num: 6, baseIdx: 4, name: "6th partial", desc: "Minor 3rd above 5th partial", gen: 2, hs: 3, cheat: "m3=3" },
+      { num: 8, baseIdx: 3, name: "8th partial", desc: "Octave above 4th partial (three octaves above fundamental)", gen: 7, hs: 12 },
+      { num: 7, baseIdx: 5, name: "7th partial", desc: "Minor 3rd above 6th partial", gen: 2, hs: 3, cheat: "m3=3", extraCheck: "Double-check: Major 2nd below the 8th partial (count left 2 half-steps)." }
+    ];
+
+    let currentStepIndex = 0; // 0 to 7
+    let isStepB = false; 
+    let completedPartials = []; // Array of Note objects
+    let bonusPartials = [];
+    
+    // Default fundamental C2
+    let fundamental = { name: 'C', acc: 'n', oct: 2 };
+    let currentNote = { name: 'C', acc: 'n', oct: 4 }; // active moving note
+    let targetNote = null; // Calculated specific target for current partial
+
+    // Stepper
+    let stepperActive = false;
+    let stepperCount = 0;
+    let stepperBaseMidi = 0;
+
+    // --- Core Functions ---
+
+    function getMidi(note) {
+      return (note.oct + 1) * 12 + baseMidi[note.name] + accToVal[note.acc];
+    }
+
+    function getFreq(note) {
+      return 440 * Math.pow(2, (getMidi(note) - 69) / 12);
+    }
+
+    function addInterval(baseNote, genericSteps, halfSteps) {
+      let bIdx = noteNames.indexOf(baseNote.name);
+      let newIdx = (bIdx + genericSteps) % 7;
+      let octaveShift = Math.floor((bIdx + genericSteps) / 7);
+      let newName = noteNames[newIdx];
+      let newOct = baseNote.oct + octaveShift;
+      
+      let targetMidi = getMidi(baseNote) + halfSteps;
+      let newBaseMidi = (newOct + 1) * 12 + baseMidi[newName];
+      let accValNeeded = targetMidi - newBaseMidi;
+      
+      let newAcc = Object.keys(accToVal).find(k => accToVal[k] === accValNeeded);
+      if (!newAcc) newAcc = 'n'; // Fallback to natural if extreme
+      
+      return { name: newName, acc: newAcc, oct: newOct };
+    }
+
+    function getHarmonicCentsOffset(partialNum, targetMidi, fundMidi) {
+      // Offset from Equal Temperament
+      let etSemitones = targetMidi - fundMidi;
+      return 1200 * Math.log2(partialNum) - (etSemitones * 100);
+    }
+
+    // --- Init & Setup ---
+
+    async function initApp() {
+      document.getElementById("audio-overlay").style.display = "none";
+      await Tone.start();
+      synth = new Tone.Synth({
+        oscillator: { type: "sine" },
+        envelope: { attack: 0.02, decay: 0.1, sustain: 0.8, release: 0.5 }
+      }).toDestination();
+      
+      testAccidentals();
+      renderKeyboard();
+      startLesson(fundamental);
+    }
+
+    function testAccidentals() {
+      validAccidentals.forEach(acc => {
+        try {
+          new VF.StaveNote({ keys: ["c/4"], duration: "q" }).addModifier(new VF.Accidental(acc));
+        } catch (e) {
+          validAccidentals = validAccidentals.filter(a => a !== acc);
+          showToast(`Accidental ${acc} unavailable.`);
+          document.getElementById(`btn-${acc.replace('#','hash')}`).disabled = true;
+        }
+      });
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.innerText = msg;
+      t.style.opacity = 1;
+      setTimeout(() => t.style.opacity = 0, 3000);
+    }
+
+    // --- Game Logic ---
+
+    function startLesson(fundNote) {
+      fundamental = { ...fundNote };
+      completedPartials = [];
+      bonusPartials = [];
+      currentStepIndex = 0;
+      isStepB = false;
+      stepperActive = false;
+      document.getElementById('hz-display').innerHTML = '';
+      setupCurrentPartial();
+    }
+
+    function togglePracticeMode() {
+      isPracticeMode = document.getElementById('practice-toggle').checked;
+      document.getElementById('reminders-toggle').checked = !isPracticeMode;
+      if (isPracticeMode) {
+        // Random fundamental C2 to B3
+        const notes = ['C','D','E','F','G','A','B'];
+        const accs = ['n', 'b', '#'];
+        let n = notes[Math.floor(Math.random()*notes.length)];
+        let a = accs[Math.floor(Math.random()*accs.length)];
+        let o = Math.floor(Math.random() * 2) + 2; // 2 or 3
+        startLesson({ name: n, acc: a, oct: o });
+      } else {
+        startLesson({ name: 'C', acc: 'n', oct: 2 });
+      }
+    }
+
+    function setupCurrentPartial() {
+      document.getElementById("enharmonic-warning").classList.add("hidden");
+      isStepB = false;
+      document.getElementById('step-a-container').classList.remove('hidden');
+      document.getElementById('step-b-container').classList.add('hidden');
+      document.getElementById('half-step-tool').classList.add('hidden');
+      stepperActive = false;
+
+      const def = partialsDef[currentStepIndex];
+      
+      if (def.isFund) {
+        targetNote = { ...fundamental };
+        currentNote = { name: 'C', acc: 'n', oct: 4 }; // Start generic guess at C4
+      } else {
+        const baseNote = completedPartials[def.baseIdx];
+        targetNote = addInterval(baseNote, def.gen, def.hs);
+        // Start current note visually near the last one, stripped of accidental
+        currentNote = { name: completedPartials[completedPartials.length-1].name, acc: 'n', oct: completedPartials[completedPartials.length-1].oct };
+      }
+
+      updateUI();
+      drawStaff();
+    }
+
+    function updateUI() {
+      const def = partialsDef[currentStepIndex];
+      const reminders = document.getElementById('reminders-toggle').checked;
+
+      // Update Prompts
+      let promptTitle = `${def.name}`;
+      let promptDesc = isPracticeMode ? `Build the ${def.name}` : def.desc;
+      
+      if (def.isFund && !isPracticeMode) {
+        let accStr = fundamental.acc === 'n' ? '' : fundamental.acc;
+        promptDesc += ` (${fundamental.name}${accStr}${fundamental.oct})`;
+      }
+
+      document.getElementById('main-prompt').innerText = promptTitle;
+      document.getElementById('sub-prompt').innerText = promptDesc;
+
+      // Stepper hint
+      if (reminders && def.cheat && isStepB) {
+        document.getElementById('stepper-hint').innerText = `Hint: ${def.cheat} ${def.extraCheck ? ' | '+def.extraCheck : ''}`;
+      } else {
+        document.getElementById('stepper-hint').innerText = '';
+      }
+
+      // Update Stepper Base
+      if (def.isFund) {
+        stepperBaseMidi = getMidi(fundamental); 
+      } else {
+        stepperBaseMidi = getMidi(completedPartials[def.baseIdx]);
+      }
+      document.getElementById('stepper-count-display').innerText = stepperCount;
+
+      updateKeyboard();
+    }
+
+    function moveNote(dir) {
+      if (isStepB) return; // Locked
+      let idx = noteNames.indexOf(currentNote.name);
+      idx += dir;
+      if (idx >= 7) { idx = 0; currentNote.oct++; }
+      if (idx < 0) { idx = 6; currentNote.oct--; }
+      
+      // Clamp range
+      if (currentNote.oct > 6) currentNote.oct = 6;
+      if (currentNote.oct < 1) currentNote.oct = 1;
+      
+      currentNote.name = noteNames[idx];
+      currentNote.acc = 'n'; // Force natural while moving
+      
+      playCurrentNote(0.05); // quiet generic play
+      drawStaff();
+      updateKeyboard();
+    }
+
+    function setAccidental(acc) {
+      if (!isStepB) return;
+      currentNote.acc = acc;
+      playCurrentNote(0.2);
+      drawStaff();
+      updateKeyboard();
+    }
+
+    function checkStepA() {
+      if (currentNote.name === targetNote.name) {
+        if (currentNote.oct === targetNote.oct) {
+          // Pass Step A
+          isStepB = true;
+          document.getElementById('step-a-container').classList.add('hidden');
+          document.getElementById('step-b-container').classList.remove('hidden');
+          document.getElementById("enharmonic-warning").classList.add("hidden");
+          // Re-apply accidental if fundamental was given
+          if (partialsDef[currentStepIndex].isFund) {
+            currentNote.acc = targetNote.acc;
+          }
+          stepperCount = 0; // reset stepper
+          showToast("Generic interval correct. Now check accidentals.");
+          updateUI();
+          drawStaff();
+        } else {
+          showToast(`Correct note name (${currentNote.name}), but wrong octave. Move up/down.`);
+        }
+      } else {
+        showToast(`Incorrect generic interval. Check your counting lines/spaces.`);
+      }
+    }
+
+    function checkStepB() {
+      const cMidi = getMidi(currentNote);
+      const tMidi = getMidi(targetNote);
+
+      if (cMidi === tMidi) {
+        if (currentNote.name === targetNote.name && currentNote.acc === targetNote.acc) {
+          // Full Success
+          playCurrentNote(0.5);
+          completePartial();
+        } else {
+          // Enharmonic Warning
+          document.getElementById("enharmonic-warning").innerText = 
+            `Enharmonic warning: right pitch, wrong spelling. The generic interval demands ${targetNote.name}. Fix spelling.`;
+          document.getElementById("enharmonic-warning").classList.remove("hidden");
+        }
+      } else {
+        showToast("Incorrect specific interval. Check your half-steps!");
+      }
+    }
+
+    function completePartial() {
+      document.getElementById("enharmonic-warning").classList.add("hidden");
+      completedPartials.push({ ...currentNote });
+      
+      // Add Hz and Cents display
+      let partialNum = partialsDef[currentStepIndex].num;
+      let fundMidi = getMidi(fundamental);
+      let cents = getHarmonicCentsOffset(partialNum, getMidi(targetNote), fundMidi);
+      let sign = cents > 0 ? '+' : '';
+      let fundHz = 440 * Math.pow(2, (fundMidi - 69)/12);
+      let hHz = (fundHz * partialNum).toFixed(1);
+      
+      let badge = `<span class="cents-badge">${partialNum}: ${hHz}Hz (${sign}${Math.round(cents)}¢)</span>`;
+      document.getElementById('hz-display').innerHTML += badge;
+
+      currentStepIndex++;
+      if (currentStepIndex < partialsDef.length) {
+        setupCurrentPartial();
+      } else {
+        // Bonus Mode!
+        generateBonusPartials();
+        document.getElementById('prompt-panel').innerHTML = `<h3>Lesson Complete!</h3><p>More partials continue (whole-tone-ish, then chromatic-ish, then microtonal) shown as stemless notes.</p>`;
+        document.getElementById('step-a-container').classList.add('hidden');
+        document.getElementById('step-b-container').classList.add('hidden');
+        drawStaff();
+      }
+    }
+
+    function generateBonusPartials() {
+      let fundHz = getFreq(fundamental);
+      // Generate 9 to 16
+      const easySpellings = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+      for (let i = 9; i <= 16; i++) {
+        let tHz = fundHz * i;
+        // find closest midi
+        let midi = Math.round(12 * Math.log2(tHz / 440) + 69);
+        let oct = Math.floor(midi / 12) - 1;
+        let pc = midi % 12;
+        let spell = easySpellings[pc];
+        let name = spell.charAt(0);
+        let acc = spell.length > 1 ? spell.substring(1) : 'n';
+        bonusPartials.push({ name, acc, oct, isBonus: true });
+      }
+    }
+
+    // --- Stepper Logic ---
+
+    function toggleStepper() {
+      stepperActive = !stepperActive;
+      const t = document.getElementById('half-step-tool');
+      if (stepperActive) {
+        t.classList.remove('hidden');
+        stepperCount = 0;
+      } else {
+        t.classList.add('hidden');
+      }
+      updateUI();
+    }
+
+    function stepHalf(dir) {
+      stepperCount += dir;
+      updateUI();
+      // Play stepper note quietly
+      if (synth) synth.triggerAttackRelease(440 * Math.pow(2, ((stepperBaseMidi + stepperCount) - 69) / 12), "16n", undefined, 0.1);
+    }
+
+    // --- Audio ---
+
+    function playCurrentNote(vel = 0.5) {
+      if (!synth) return;
+      let freq = getFreq(currentNote);
+      synth.triggerAttackRelease(freq, "8n", undefined, vel);
+    }
+
+    function playFundamental() {
+      if (!synth) return;
+      synth.triggerAttackRelease(getFreq(fundamental), "4n", undefined, 0.6);
+    }
+
+    function playSeries() {
+      if (!synth || completedPartials.length === 0) return;
+      let time = Tone.now();
+      completedPartials.forEach((p, i) => {
+        synth.triggerAttackRelease(getFreq(p), "8n", time + i * 0.4, 0.5);
+      });
+    }
+
+    // --- Keyboard Rendering ---
+
+    function renderKeyboard() {
+      const kb = document.getElementById('keyboard');
+      kb.innerHTML = '';
+      
+      // Render C1 to C7 (midi 24 to 96)
+      let currentWhiteKey = null;
+      for (let m = 24; m <= 96; m++) {
+        let pc = m % 12;
+        let isBlack = [1,3,6,8,10].includes(pc);
+        
+        let el = document.createElement('div');
+        el.className = `key ${isBlack ? 'black' : 'white'}`;
+        el.id = `key-${m}`;
+        
+        // Label faint C
+        if (pc === 0) el.innerText = `C${(m/12)-1}`;
+
+        el.onclick = () => {
+          if (synth) synth.triggerAttackRelease(440 * Math.pow(2, (m - 69)/12), "16n", undefined, 0.2);
+        };
+
+        if (isBlack && currentWhiteKey) {
+          currentWhiteKey.appendChild(el);
+        } else {
+          kb.appendChild(el);
+          currentWhiteKey = el;
+        }
+      }
+    }
+
+    function updateKeyboard() {
+      document.querySelectorAll('.key').forEach(k => {
+        k.classList.remove('highlight', 'stepper-highlight');
+        // Clear labels except C
+        if (!k.innerText.startsWith('C')) k.innerText = '';
+      });
+
+      // Highlight current note
+      let cm = getMidi(currentNote);
+      let curKey = document.getElementById(`key-${cm}`);
+      if (curKey) {
+        curKey.classList.add('highlight');
+        curKey.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+
+      // Stepper highlight
+      if (stepperActive && isStepB) {
+        let sm = stepperBaseMidi + stepperCount;
+        let stepKey = document.getElementById(`key-${sm}`);
+        if (stepKey) {
+          stepKey.classList.add('stepper-highlight');
+          if (document.getElementById('reminders-toggle').checked) {
+            stepKey.innerText = stepperCount; // show number on key
+          }
+        }
+        // Also label base key 0
+        let baseKey = document.getElementById(`key-${stepperBaseMidi}`);
+        if (baseKey && !baseKey.innerText.startsWith('C')) baseKey.innerText = '0';
+      }
+    }
+
+    // --- VexFlow Rendering ---
+
+    function drawStaff() {
+      const container = document.getElementById("vexflow-container");
+      container.innerHTML = "";
+      
+      const renderer = new VF.Renderer(container, VF.Renderer.Backends.SVG);
+      renderer.resize(600, 250); // Fixed size, scrollable container
+      const ctx = renderer.getContext();
+
+      const topStave = new VF.Stave(30, 20, 540);
+      topStave.addClef("treble").setContext(ctx).draw();
+
+      const bottomStave = new VF.Stave(30, 110, 540);
+      bottomStave.addClef("bass").setContext(ctx).draw();
+
+      const brace = new VF.StaveConnector(topStave, bottomStave).setType(3);
+      const lineLeft = new VF.StaveConnector(topStave, bottomStave).setType(1);
+      const lineRight = new VF.StaveConnector(topStave, bottomStave).setType(0);
+      brace.setContext(ctx).draw();
+      lineLeft.setContext(ctx).draw();
+      lineRight.setContext(ctx).draw();
+
+      let trebleNotes = [];
+      let bassNotes = [];
+
+      // Helper to build note objects
+      const buildVFNote = (nData, isCurrent) => {
+        let m = getMidi(nData);
+        let homeClef = m >= 60 ? "treble" : "bass";
+        let isOverlap = m >= 55 && m <= 65; // G3 to F4
+        
+        let keys = [`${nData.name.toLowerCase()}/${nData.oct}`];
+        
+        // Home Note
+        let mainNote = new VF.StaveNote({ keys: keys, duration: nData.isBonus ? "q" : "q", clef: homeClef });
+        if (nData.acc && nData.acc !== 'n') mainNote.addModifier(new VF.Accidental(nData.acc));
+        
+        if (isCurrent) {
+          mainNote.setStyle({ fillStyle: '#2196F3', strokeStyle: '#2196F3' });
+        } else if (nData.isBonus) {
+          mainNote.setStyle({ fillStyle: '#888', strokeStyle: '#888' });
+          mainNote.getStem().setStyle({ strokeStyle: 'transparent' }); // stemless
+        } else {
+          mainNote.setStyle({ fillStyle: '#000', strokeStyle: '#000' });
+        }
+
+        // Ghost setup
+        let ghostNote;
+        if (isOverlap) {
+          let otherClef = homeClef === "treble" ? "bass" : "treble";
+          ghostNote = new VF.StaveNote({ keys: keys, duration: "q", clef: otherClef });
+          if (nData.acc && nData.acc !== 'n') ghostNote.addModifier(new VF.Accidental(nData.acc));
+          ghostNote.addModifier(new VF.Parenthesis(0), 0);
+          ghostNote.setStyle({ fillStyle: '#aaa', strokeStyle: '#aaa' });
+          if(nData.isBonus) ghostNote.getStem().setStyle({ strokeStyle: 'transparent' });
+        } else {
+          // Invisible spacer
+          ghostNote = new VF.GhostNote({ duration: "q" });
+        }
+
+        if (homeClef === "treble") {
+          trebleNotes.push(mainNote);
+          bassNotes.push(ghostNote);
+        } else {
+          trebleNotes.push(ghostNote);
+          bassNotes.push(mainNote);
+        }
+      };
+
+      // Add all completed
+      completedPartials.forEach(p => buildVFNote(p, false));
+      
+      // Add current if not finished
+      if (currentStepIndex < partialsDef.length) {
+        buildVFNote(currentNote, true);
+      } else {
+        // Add bonus notes
+        bonusPartials.forEach(p => buildVFNote(p, false));
+      }
+
+      // Format and draw
+      if (trebleNotes.length > 0) {
+        const trebleVoice = new VF.Voice({ num_beats: trebleNotes.length, beat_value: 4 }).setMode(VF.Voice.Mode.SOFT);
+        const bassVoice = new VF.Voice({ num_beats: bassNotes.length, beat_value: 4 }).setMode(VF.Voice.Mode.SOFT);
+        
+        trebleVoice.addTickables(trebleNotes);
+        bassVoice.addTickables(bassNotes);
+
+        new VF.Formatter().joinVoices([trebleVoice, bassVoice]).format([trebleVoice, bassVoice], 480);
+
+        trebleVoice.draw(ctx, topStave);
+        bassVoice.draw(ctx, bottomStave);
+      }
+    }
+  </script>
+</body>
+</html>
