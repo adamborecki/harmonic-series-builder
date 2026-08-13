@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#101825" />
+  <meta
+    name="description"
+    content="Harmonic Series Builder — three early prototypes built from the same prompt across ChatGPT, Claude, and Gemini. The current version lives in a separate repo."
+  />
+  <title>Harmonic Series Builder — Prototype Archive</title>
+
+  <style>
+    :root{
+      --bg0:#101825;
+      --bg1:#162131;
+      --ink:#f5efe6;
+      --muted:rgba(245,239,230,.72);
+      --muted-2:rgba(245,239,230,.54);
+      --panel:rgba(255,255,255,.07);
+      --panel-2:rgba(255,255,255,.05);
+      --stroke:rgba(255,255,255,.14);
+      --stroke-2:rgba(255,255,255,.10);
+      --accent:#ff8a3d;
+      --accent-2:#5dd2ff;
+      --accent-3:#fff0b3;
+      --ok:#80f0c6;
+      --shadow:0 24px 64px rgba(0,0,0,.33);
+      --radius-lg:24px;
+      --radius-md:18px;
+      --radius-sm:12px;
+      --sans:"Avenir Next","Trebuchet MS","Helvetica Neue","Segoe UI",sans-serif;
+      --display:"Avenir Next Condensed","Trebuchet MS","Gill Sans","Segoe UI",sans-serif;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
+    }
+
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg0:#f7f3eb;
+        --bg1:#ebe4d8;
+        --ink:#1a2230;
+        --muted:rgba(26,34,48,.72);
+        --muted-2:rgba(26,34,48,.56);
+        --panel:rgba(255,255,255,.58);
+        --panel-2:rgba(255,255,255,.42);
+        --stroke:rgba(26,34,48,.12);
+        --stroke-2:rgba(26,34,48,.09);
+        --shadow:0 22px 54px rgba(68,49,24,.12);
+      }
+    }
+
+    *{ box-sizing:border-box }
+    html,body{ min-height:100% }
+    body{
+      margin:0;
+      color:var(--ink);
+      font-family:var(--sans);
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(255,138,61,.16), transparent 60%),
+        radial-gradient(900px 500px at 110% 0%, rgba(93,210,255,.14), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      background-attachment: fixed;
+      line-height:1.5;
+    }
+
+    main{
+      max-width:920px;
+      margin:0 auto;
+      padding:56px 20px 80px;
+    }
+
+    .eyebrow{
+      font-family:var(--mono);
+      font-size:.8rem;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color:var(--muted-2);
+      margin:0 0 10px;
+    }
+
+    h1{
+      font-family:var(--display);
+      font-size:clamp(2rem, 5vw, 2.8rem);
+      line-height:1.05;
+      margin:0 0 14px;
+    }
+
+    .lede{
+      color:var(--muted);
+      font-size:1.05rem;
+      max-width:60ch;
+      margin:0 0 36px;
+    }
+
+    .best{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      gap:18px;
+      padding:26px 28px;
+      border-radius:var(--radius-lg);
+      background:linear-gradient(135deg, rgba(255,138,61,.18), rgba(93,210,255,.10));
+      border:1px solid var(--stroke);
+      box-shadow:var(--shadow);
+      margin-bottom:48px;
+    }
+
+    .best h2{
+      margin:0 0 6px;
+      font-family:var(--display);
+      font-size:1.5rem;
+    }
+
+    .best p{
+      margin:0;
+      color:var(--muted);
+      max-width:48ch;
+    }
+
+    .best .badge{
+      display:inline-block;
+      font-family:var(--mono);
+      font-size:.72rem;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      color:var(--bg0);
+      background:var(--accent-3);
+      padding:3px 9px;
+      border-radius:999px;
+      margin-bottom:10px;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:12px 22px;
+      border-radius:999px;
+      background:var(--ink);
+      color:var(--bg0);
+      font-weight:600;
+      text-decoration:none;
+      white-space:nowrap;
+      transition:transform .15s ease, opacity .15s ease;
+    }
+    .btn:hover{ transform:translateY(-1px); opacity:.9 }
+
+    .btn.ghost{
+      background:transparent;
+      color:var(--ink);
+      border:1px solid var(--stroke);
+      font-weight:500;
+      padding:9px 18px;
+      font-size:.92rem;
+    }
+
+    .section-head{
+      margin:0 0 8px;
+    }
+    .section-head h2{
+      font-family:var(--display);
+      font-size:1.4rem;
+      margin:0 0 8px;
+    }
+    .section-head p{
+      color:var(--muted);
+      margin:0 0 28px;
+      max-width:62ch;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));
+      gap:18px;
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--stroke);
+      border-radius:var(--radius-md);
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .card .maker{
+      font-family:var(--mono);
+      font-size:.72rem;
+      letter-spacing:.1em;
+      text-transform:uppercase;
+      color:var(--accent-2);
+    }
+
+    .card h3{
+      margin:0;
+      font-size:1.15rem;
+    }
+
+    .card p{
+      margin:0;
+      color:var(--muted);
+      font-size:.94rem;
+      flex-grow:1;
+    }
+
+    .card .links{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:4px;
+    }
+
+    .note{
+      margin-top:40px;
+      padding:18px 20px;
+      border-radius:var(--radius-sm);
+      border:1px dashed var(--stroke);
+      color:var(--muted-2);
+      font-size:.9rem;
+    }
+
+    footer{
+      margin-top:56px;
+      padding-top:20px;
+      border-top:1px solid var(--stroke-2);
+      color:var(--muted-2);
+      font-size:.85rem;
+    }
+    footer a{ color:inherit }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Harmonic Series Builder — prototype archive</p>
+    <h1>Three AI assistants, one prompt, three builds.</h1>
+    <p class="lede">
+      This repo is the early "gen 2" round: the same brief was handed to ChatGPT, Claude, and Gemini
+      to see how each one would build a harmonic-series ear-training tool. They're kept here for the record.
+    </p>
+
+    <div class="best">
+      <div>
+        <span class="badge">Current version</span>
+        <h2>Harmonic Series Builder — Gen 3</h2>
+        <p>The newest and best version lives in its own repo, with a more polished notation-minded learning flow.</p>
+      </div>
+      <a class="btn" href="https://adamborecki.github.io/harmonic-series-builder-gen3/">Try Gen 3 →</a>
+    </div>
+
+    <div class="section-head">
+      <h2>The Gen 2 prototypes</h2>
+      <p>
+        Each of these was built independently from the same prompt. They're left mostly as-is, so expect some
+        rough edges — this is the "before" to Gen 3's "after."
+      </p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <span class="maker">ChatGPT</span>
+        <h3>Staff + Keyboard Builder</h3>
+        <p>The ChatGPT pass at the brief, built on VexFlow for notation and Tone.js for playback.</p>
+        <div class="links">
+          <a class="btn ghost" href="gen2_chatV2.html">Open V2 →</a>
+          <a class="btn ghost" href="gen2_chatV1.html">V1</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="maker">Claude</span>
+        <h3>Harmonic Series Builder</h3>
+        <p>The Claude pass — a leaner build with its own font system and no external audio library.</p>
+        <div class="links">
+          <a class="btn ghost" href="gen2_claudeV2.html">Open V2 →</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="maker">Gemini</span>
+        <h3>Staff + Keyboard Builder</h3>
+        <p>The Gemini pass, on the free tier — same VexFlow/Tone.js approach, its own take on the UI.</p>
+        <div class="links">
+          <a class="btn ghost" href="gen2_geminiV2.html">Open V2 →</a>
+          <a class="btn ghost" href="gen2_geminiV1.html">V1</a>
+        </div>
+      </div>
+    </div>
+
+    <p class="note">
+      Note: there's no Claude V1 — the Claude Pro build only started after V2 prompts were already settled on
+      for the other two, so the same V2 prompt was used across all three.
+    </p>
+
+    <footer>
+      Part of <a href="https://adamborecki.github.io/webapps/">Adam Borecki's web apps</a>.
+    </footer>
+  </main>
+</body>
+</html>
